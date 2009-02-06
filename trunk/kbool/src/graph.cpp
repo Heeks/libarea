@@ -2117,8 +2117,8 @@ void Graph::CreateArc(Node* center, Node* begin, Node* end,double radius,bool cl
 
 	if (Segments <= 1)
 	  Segments=1;
-	if (Segments > 6)
-	  Segments=6;
+	if (Segments > 100)
+	  Segments=100;
 
 	dphi=phit/(Segments);
 

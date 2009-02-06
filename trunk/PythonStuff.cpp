@@ -32,7 +32,7 @@ void ArmBoolEng( Bool_Engine* booleng )
                           // this is also used to remove small segments and to decide when
                           // two segments are in line.
     double CORRECTIONFACTOR = 500.0;  // correct the polygons by this number
-    double CORRECTIONABER   = 0.001;    // the accuracy for the rounded shapes used in correction
+    double CORRECTIONABER   = 0.01;    // the accuracy for the rounded shapes used in correction
     double ROUNDFACTOR      = 1.5;    // when will we round the correction shape to a circle
     double SMOOTHABER       = 10.0;   // accuracy when smoothing a polygon
     double MAXLINEMERGE     = 1000.0; // leave as is, segments of this length in smoothen
@@ -107,35 +107,14 @@ static PyObject* area_add_point(PyObject* self, PyObject* args)
 	CArea* k = (CArea*)ik;
 	if(valid_areas.find(k) != valid_areas.end())
 	{
+		// add a curve if there isn't one
 		if(k->m_curves.size() == 0)k->m_curves.push_back(CCurve());
 
-		CVertex spv(sp, x, y, i, j);
-#if 0
-		// to do, arcs
-		if(sp)
-		{
-			// can't add arc as first span
-			if(!(k->m_curves[0].m_vertices.size() == 0)){ const char* str = "can't add arc to area as first point"; cout << str; throw(str);}
+		// can't add arc as first span
+		if(sp && k->m_curves[0].m_vertices.size() == 0){ const char* str = "can't add arc to area as first point"; printf(str); throw(str);}
 
-			// fix radius by moving centre point a little bit
-			int previous_vertex = k->nSpans();
-			spVertex pv;
-			k->Get(previous_vertex, pv);
-			Vector2d v(spv.pc, pv.p);
-			double r = v.magnitude();
-			Circle c1( pv.p, r );
-			Circle c2( spv.p, r );
-			Point leftInters, rightInters;
-			if(c1.Intof(c2, leftInters, rightInters) == 2)
-			{
-				double d1 = spv.pc.Dist(leftInters);
-				double d2 = spv.pc.Dist(rightInters);
-				if(d1<d2)spv.pc = leftInters;
-				else spv.pc = rightInters;
-			}
-		}
-#endif
-		k->m_curves[0].m_vertices.push_back(spv);
+		// add the vertex
+		k->m_curves[0].m_vertices.push_back(CVertex(sp, x, y, i, j));
 	}
 
 	Py_RETURN_NONE;
@@ -154,6 +133,13 @@ static PyObject* area_offset(PyObject* self, PyObject* args)
 	{
 		k->Offset(inwards);
 	}
+
+	Py_RETURN_NONE;
+}
+
+static PyObject* area_set_round_corner_factor(PyObject* self, PyObject* args)
+{
+	if (!PyArg_ParseTuple(args, "d", &CArea::m_round_corners_factor)) return NULL;
 
 	Py_RETURN_NONE;
 }
@@ -286,6 +272,7 @@ static PyMethodDef AreaMethods[] = {
 	{"delete", area_delete, METH_VARARGS , ""},
 	{"add_point", area_add_point, METH_VARARGS , ""},
 	{"offset", area_offset, METH_VARARGS , ""},
+	{"set_round_corner_factor", area_set_round_corner_factor, METH_VARARGS , ""},
 	{"copy", area_copy, METH_VARARGS , ""},
 	{"num_curves", area_num_curves, METH_VARARGS , ""},
 	{"num_vertices", area_num_vertices, METH_VARARGS , ""},
