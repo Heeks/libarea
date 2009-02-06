@@ -1,0 +1,53 @@
+#summary List of functions for the Python module
+
+
+===a = new()===
+makes a new empty area and returns an integer handle
+
+===exists(a)===
+returns True is the given area exists
+
+===delete(a)===
+deletes the given area
+
+===add_point(a, span_type, x, y, cx, cy)===
+adds a point to the given area
+
+  span_type = 0 - for a line, or the start point, 1 for an anti-clockwise arc, -1 for a clockwise arc
+
+  x, y = the point to add
+
+  cx, cy = the centre point of the arc ( you can use any values here if span_type = 0 )
+
+eg. add_point(a, 0, 10, 10, 0, 0)
+
+
+===offset(a, inwards_value)===
+offsets the given area inwards by inwards_value, or outwards if inwards value is negative
+the round corners can be controlled with set_round_corner factor, see below
+
+===set_round_corner_factor(factor)===
+a value which determines if round corners are made when offsetting
+
+for 90 degree corners
+
+   use 1 for round corners
+
+   use 1.5 for square corners
+
+
+===copy(a1, a2)===
+copies a1 to a2
+  for example
+    a2 = area.new()
+    area.copy(a1, a2)
+	
+===num_curves, num_vertices, get_vertex===
+for getting the shape of a given area
+example
+
+    for curve in range(0, area.num_curves(a)):
+
+        for vertex in range(0, area.num_vertices(a, curve)):
+
+            sp, x, y, cx, cy = area.get_vertex(a, curve, vertex)
