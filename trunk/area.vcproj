@@ -185,10 +185,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\dllmain.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\kbool\src\graph.cpp"
 				>
 			</File>
