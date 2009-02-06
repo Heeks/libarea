@@ -38,12 +38,17 @@ for 90 degree corners
 
 ===copy(a1, a2)===
 copies a1 to a2
+
   for example
+
     a2 = area.new()
+
     area.copy(a1, a2)
+
 	
 ===num_curves, num_vertices, get_vertex===
 for getting the shape of a given area
+
 example
 
     for curve in range(0, area.num_curves(a)):
