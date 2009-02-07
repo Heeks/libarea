@@ -4,7 +4,7 @@
 
     Copyright: 2001-2004 (C) Probably Klaas Holwerda
 
-    Licence: wxWidgets Licence
+    Licence: see kboollicense.txt 
 
     RCS-ID: $Id: graph.cpp,v 1.13 2005/06/17 22:42:58 kbluck Exp $
 */

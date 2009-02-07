@@ -3,7 +3,7 @@
 
     Copyright: 2001-2004 (C) Probably Klaas Holwerda
 
-    Licence: wxWidgets Licence
+    Licence: see kboollicense.txt 
 
     RCS-ID: $Id: scanbeam.h,v 1.2 2005/06/11 19:25:12 frm Exp $
 */

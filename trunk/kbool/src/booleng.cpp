@@ -3,7 +3,7 @@
 
     Copyright: 2001-2004 (C) Probably Klaas Holwerda
 
-    Licence: wxWidgets Licence
+    Licence: see kboollicense.txt 
 
     RCS-ID: $Id: booleng.cpp,v 1.11 2005/05/24 19:13:38 titato Exp $
 */
