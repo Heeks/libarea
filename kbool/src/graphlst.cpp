@@ -4,7 +4,7 @@
 
     Copyright: 2001-2004 (C) Probably Klaas Holwerda 
 
-    Licence: wxWidgets Licence
+    Licence: see kboollicense.txt 
 
     RCS-ID: $Id: graphlst.cpp,v 1.8 2005/05/24 19:13:38 titato Exp $
 */

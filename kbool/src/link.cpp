@@ -3,7 +3,7 @@
 
     Copyright: 2001-2004 (C) Probably Klaas Holwerda
 
-    Licence: wxWidgets Licence
+    Licence: see kboollicense.txt 
 
     RCS-ID: $Id: link.cpp,v 1.10 2005/06/17 22:54:37 kbluck Exp $
 */

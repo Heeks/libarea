@@ -3,7 +3,7 @@
 
     Copyright: 2001-2004 (C) Probably Klaas Holwerda
 
-    Licence: wxWidgets Licence
+    Licence: see kboollicense.txt 
 
     RCS-ID: $Id: _dl_itr.h,v 1.1 2005/05/24 19:13:35 titato Exp $
 */

@@ -4,7 +4,7 @@
 
     Copyright: 2001-2004 (C) Probably Klaas Holwerda
 
-    Licence: wxWidgets Licence
+    Licence: see kboollicense.txt 
 
     RCS-ID: $Id: line.h,v 1.2 2005/06/12 00:03:11 kbluck Exp $
 */
