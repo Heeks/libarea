@@ -1,6 +1,6 @@
 // Area.h
 
-// written by Dan Heeks, January 6th 2009, license: GPL version 3 http://www.gnu.org/licenses/gpl-3.0.txt
+// written by Dan Heeks, February 6th 2009, license: GPL version 3 http://www.gnu.org/licenses/gpl-3.0.txt
 
 #ifndef AREA_HEADER
 #define AREA_HEADER
