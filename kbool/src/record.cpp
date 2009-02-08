@@ -1,7 +1,7 @@
 /*! \file kbool/src/record.cpp
-    \author Probably Klaas Holwerda or Julian Smart
+    \author Klaas Holwerda or Julian Smart
 
-    Copyright: 2001-2004 (C) Probably Klaas Holwerda
+    Copyright: 2001-2004 (C) Klaas Holwerda
 
     Licence: see kboollicense.txt 
 

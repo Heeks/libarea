@@ -1,8 +1,8 @@
 /*! \file kbool/src/graphlst.cpp
     \brief Implements a list of graphs
-    \author Probably Klaas Holwerda 
+    \author Klaas Holwerda 
 
-    Copyright: 2001-2004 (C) Probably Klaas Holwerda 
+    Copyright: 2001-2004 (C) Klaas Holwerda 
 
     Licence: see kboollicense.txt 
 

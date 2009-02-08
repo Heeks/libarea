@@ -255,10 +255,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\kbool\include\kboolmod.h"
-				>
-			</File>
-			<File
 				RelativePath=".\kbool\include\line.h"
 				>
 			</File>
@@ -284,10 +280,6 @@
 			</File>
 			<File
 				RelativePath=".\kbool\include\scanbeam.h"
-				>
-			</File>
-			<File
-				RelativePath=".\kbool\include\valuesvc.h"
 				>
 			</File>
 		</Filter>
