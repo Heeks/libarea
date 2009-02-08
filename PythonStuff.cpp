@@ -111,12 +111,28 @@ static PyObject* area_add_point(PyObject* self, PyObject* args)
 	{
 		// add a curve if there isn't one
 		if(k->m_curves.size() == 0)k->m_curves.push_back(CCurve());
+		int curve_index = k->m_curves.size() - 1;
 
 		// can't add arc as first span
-		if(sp && k->m_curves[0].m_vertices.size() == 0){ const char* str = "can't add arc to area as first point"; printf(str); throw(str);}
+		if(sp && k->m_curves[curve_index].m_vertices.size() == 0){ const char* str = "can't add arc to area as first point"; printf(str); throw(str);}
 
 		// add the vertex
-		k->m_curves[0].m_vertices.push_back(CVertex(sp, x, y, i, j));
+		k->m_curves[curve_index].m_vertices.push_back(CVertex(sp, x, y, i, j));
+	}
+
+	Py_RETURN_NONE;
+}
+
+static PyObject* area_start_new_curve(PyObject* self, PyObject* args)
+{
+	int ik;
+	if (!PyArg_ParseTuple(args, "i", &ik)) return NULL;
+
+	CArea* k = (CArea*)ik;
+	if(valid_areas.find(k) != valid_areas.end())
+	{
+		// add a new curve
+		k->m_curves.push_back(CCurve());
 	}
 
 	Py_RETURN_NONE;
@@ -134,6 +150,23 @@ static PyObject* area_offset(PyObject* self, PyObject* args)
 	if(valid_areas.find(k) != valid_areas.end())
 	{
 		k->Offset(inwards);
+	}
+
+	Py_RETURN_NONE;
+}
+
+static PyObject* area_subtract(PyObject* self, PyObject* args)
+{
+	int a1, a2;
+	double inwards;
+	if (!PyArg_ParseTuple(args, "ii", &a1, &a2)) return NULL;
+
+	CArea* area1 = (CArea*)a1;
+	CArea* area2 = (CArea*)a2;
+
+	if(valid_areas.find(area1) != valid_areas.end() && valid_areas.find(area2) != valid_areas.end())
+	{
+		area1->Subtract(*area2);
 	}
 
 	Py_RETURN_NONE;
@@ -273,6 +306,8 @@ static PyMethodDef AreaMethods[] = {
 	{"exists", area_exists, METH_VARARGS , ""},
 	{"delete", area_delete, METH_VARARGS , ""},
 	{"add_point", area_add_point, METH_VARARGS , ""},
+	{"start_new_curve", area_start_new_curve, METH_VARARGS , ""},
+	{"subtract", area_subtract, METH_VARARGS , ""},
 	{"offset", area_offset, METH_VARARGS , ""},
 	{"set_round_corner_factor", area_set_round_corner_factor, METH_VARARGS , ""},
 	{"copy", area_copy, METH_VARARGS , ""},
