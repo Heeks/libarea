@@ -158,7 +158,6 @@ static PyObject* area_offset(PyObject* self, PyObject* args)
 static PyObject* area_subtract(PyObject* self, PyObject* args)
 {
 	int a1, a2;
-	double inwards;
 	if (!PyArg_ParseTuple(args, "ii", &a1, &a2)) return NULL;
 
 	CArea* area1 = (CArea*)a1;
