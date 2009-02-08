@@ -19,11 +19,21 @@ CVertex::CVertex(int type, double x, double y, double cx, double cy):m_type(type
 
 double CArea::m_round_corners_factor = 1.5;
 
+void CArea::Subtract(const CArea& a2)
+{
+	Bool_Engine* booleng = new Bool_Engine();
+	ArmBoolEng( booleng );
+	MakeGroup( booleng, true );
+//	a2.MakeGroup( booleng, false );
+	//booleng->Do_Operation(BOOL_SUBTRACT);
+	SetFromResult( booleng );
+}
+
 void CArea::Offset(double inwards_value)
 {
 	Bool_Engine* booleng = new Bool_Engine();
 	ArmBoolEng( booleng );
-	MakeGroupA( booleng );
+	MakeGroup( booleng, true);
 	booleng->SetRoundfactor(m_round_corners_factor);
 	booleng->SetCorrectionFactor( -inwards_value );
 	booleng->Do_Operation(BOOL_CORRECTION);
@@ -105,9 +115,9 @@ void CArea::AddVertex(Bool_Engine* booleng, CVertex& vertex, CVertex* prev_verte
 	}
 }
 
-void CArea::MakeGroupA( Bool_Engine* booleng )
+void CArea::MakeGroup( Bool_Engine* booleng, bool a_not_b )
 {
-	booleng->StartPolygonAdd(GROUP_A);
+	booleng->StartPolygonAdd(a_not_b ? GROUP_A:GROUP_B);
 	// to do, separate curves
 
 	// for now, just assume one curve
