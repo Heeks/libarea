@@ -177,11 +177,19 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\Arc.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Area.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\kbool\src\booleng.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Circle.cpp"
 				>
 			</File>
 			<File
@@ -239,11 +247,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Arc.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Area.h"
 				>
 			</File>
 			<File
 				RelativePath=".\kbool\include\booleng.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Circle.h"
 				>
 			</File>
 			<File
@@ -268,6 +284,10 @@
 			</File>
 			<File
 				RelativePath=".\kbool\include\node.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Point.h"
 				>
 			</File>
 			<File
