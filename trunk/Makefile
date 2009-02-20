@@ -1,16 +1,22 @@
 CCFLAGS=-Wall -fPIC -g -I/usr/include/python2.5 -I./ -I./kbool/include
 
-OBJECTS=Area.o booleng.o graph.o graphlst.o instonly.o line.o link.o lpoint.o node.o PythonStuff.o record.o scanbeam.o
+OBJECTS=Arc.o Area.o booleng.o Circle.o graph.o graphlst.o instonly.o line.o link.o lpoint.o node.o PythonStuff.o record.o scanbeam.o
 
 SHARED_LIBRARY=./area.so
 
 ${SHARED_LIBRARY}: ${OBJECTS}
 	gcc -shared -fPIC -Wl,-soname,area.so.0 -o ${SHARED_LIBRARY} ${OBJECTS} -lstdc++ -lpython2.5
 
+Arc.o: Arc.cpp
+	gcc -c $? ${CCFLAGS} -o $@
+
 Area.o: Area.cpp
 	gcc -c $? ${CCFLAGS} -o $@
 
 booleng.o: kbool/src/booleng.cpp
+	gcc -c $? ${CCFLAGS} -o $@
+
+Circle.o: Circle.cpp
 	gcc -c $? ${CCFLAGS} -o $@
 
 graph.o: kbool/src/graph.cpp
