@@ -25,39 +25,6 @@
 
 #include "kbool/include/booleng.h"
 
-void ArmBoolEng( Bool_Engine* booleng )
-{
-    // set some global vals to arm the boolean engine
-    double DGRID = 1000;  // round coordinate X or Y value in calculations to this
-    double MARGE = 0.001;   // snap with in this range points to lines in the intersection routines
-                          // should always be > DGRID  a  MARGE >= 10*DGRID is oke
-                          // this is also used to remove small segments and to decide when
-                          // two segments are in line.
-    double CORRECTIONFACTOR = 500.0;  // correct the polygons by this number
-    double CORRECTIONABER   = 0.01;    // the accuracy for the rounded shapes used in correction
-    double ROUNDFACTOR      = 1.5;    // when will we round the correction shape to a circle
-    double SMOOTHABER       = 10.0;   // accuracy when smoothing a polygon
-    double MAXLINEMERGE     = 1000.0; // leave as is, segments of this length in smoothen
- 
-
-    // DGRID is only meant to make fractional parts of input data which 
-    // are doubles, part of the integers used in vertexes within the boolean algorithm.
-    // Within the algorithm all input data is multiplied with DGRID
-    
-    // space for extra intersection inside the boolean algorithms
-    // only change this if there are problems
-    int GRID =10000;
-
-    booleng->SetMarge( MARGE );
-    booleng->SetGrid( GRID );
-    booleng->SetDGrid( DGRID );
-    booleng->SetCorrectionFactor( CORRECTIONFACTOR );
-    booleng->SetCorrectionAber( CORRECTIONABER );
-    booleng->SetSmoothAber( SMOOTHABER );
-    booleng->SetMaxlinemerge( MAXLINEMERGE );
-    booleng->SetRoundfactor( ROUNDFACTOR );
-}
-
 std::set<CArea*> valid_areas;
 
 static PyObject* area_new(PyObject* self, PyObject* args)

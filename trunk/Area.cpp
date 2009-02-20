@@ -5,9 +5,8 @@
 #include "Area.h"
 #include "kbool/include/_lnk_itr.h"
 #include "kbool/include/booleng.h"
-
-extern void ArmBoolEng( Bool_Engine* booleng );
-
+#include "Circle.h"
+#include "Arc.h"
 
 CVertex::CVertex(int type, double x, double y, double cx, double cy):m_type(type)
 {
@@ -17,7 +16,145 @@ CVertex::CVertex(int type, double x, double y, double cx, double cy):m_type(type
 	m_c[1] = cy;
 }
 
+bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& might_be_an_arc, Arc &arc)
+{
+	// this examines the vertices in might_be_an_arc
+	// if they do fit an arc, set arc to be the arc that they fit and return true
+	// returns true, if arc added
+	if(might_be_an_arc.size() < 2)return false;
+
+	// create a circle to test
+	Point p0(prev_vt.m_p[0], prev_vt.m_p[1]);
+	Point p1(might_be_an_arc.front()->m_p[0], might_be_an_arc.front()->m_p[1]);
+	Point p2(might_be_an_arc.back()->m_p[0], might_be_an_arc.back()->m_p[1]);
+	Circle c(p0, p1, p2);
+
+	const CVertex* current_vt = &prev_vt;
+	for(std::list<const CVertex*>::iterator It = might_be_an_arc.begin(); It != might_be_an_arc.end(); It++)
+	{
+		const CVertex* vt = *It;
+
+		if(!c.LineIsOn(current_vt->m_p, vt->m_p, CArea::m_accuracy * 1.4))
+			return false;
+		current_vt = vt;
+	}
+
+	arc.m_c = c.m_c;
+	arc.m_s = prev_vt.m_p;
+	arc.m_e = might_be_an_arc.back()->m_p;
+	arc.SetDirWithPoint(might_be_an_arc.front()->m_p);
+
+	return true;
+}
+
+void CCurve::AddArcOrLines(bool check_for_arc, std::list<CVertex> &new_vertices, std::list<const CVertex*>& might_be_an_arc, Arc &arc, bool &arc_found, bool &arc_added)
+{
+	if(check_for_arc && CheckForArc(new_vertices.back(), might_be_an_arc, arc))
+	{
+		arc_found = true;
+	}
+	else
+	{
+		if(arc_found)
+		{
+			new_vertices.push_back(CVertex(arc.m_dir ? 1:-1, arc.m_e.x, arc.m_e.y, arc.m_c.x, arc.m_c.y));
+			arc_added = true;
+			arc_found = false;
+			const CVertex* back_vt = might_be_an_arc.back();
+			might_be_an_arc.clear();
+			might_be_an_arc.push_back(back_vt);
+		}
+		else
+		{
+			const CVertex* back_vt = might_be_an_arc.back();
+			might_be_an_arc.pop_back();
+			for(std::list<const CVertex*>::iterator It = might_be_an_arc.begin(); It != might_be_an_arc.end(); It++)
+			{
+				const CVertex* v = *It;
+				new_vertices.push_back(*v);
+			}
+			might_be_an_arc.clear();
+			might_be_an_arc.push_back(back_vt);
+		}
+	}
+}
+
+void CCurve::FitArcs()
+{
+	std::list<CVertex> new_vertices;
+
+	std::list<const CVertex*> might_be_an_arc;
+	Arc arc;
+	bool arc_found = false;
+	bool arc_added = false;
+
+	int num = m_vertices.size();
+	for(int i = 0; i<num; i++)
+	{
+		CVertex& vt = m_vertices[i];
+		if(vt.m_type || i == 0)
+			new_vertices.push_back(vt);
+		else
+		{
+			might_be_an_arc.push_back(&vt);
+
+			if(might_be_an_arc.size() == 1)
+			{
+			}
+			else
+			{
+				AddArcOrLines(true, new_vertices, might_be_an_arc, arc, arc_found, arc_added);
+			}
+		}
+	}
+
+	AddArcOrLines(false, new_vertices, might_be_an_arc, arc, arc_found, arc_added);
+
+	if(arc_added)
+	{
+		m_vertices.clear();
+		m_vertices.reserve(new_vertices.size() + might_be_an_arc.size());
+		int i = 0;
+		for(std::list<CVertex>::iterator It = new_vertices.begin(); It != new_vertices.end(); It++)m_vertices.push_back(*It);
+		for(std::list<const CVertex*>::iterator It = might_be_an_arc.begin(); It != might_be_an_arc.end(); It++)m_vertices.push_back(*(*It));
+	}
+}
+
 double CArea::m_round_corners_factor = 1.5;
+double CArea::m_accuracy = 0.01;
+
+void CArea::ArmBoolEng( Bool_Engine* booleng )
+{
+    // set some global vals to arm the boolean engine
+    double DGRID = 1000;  // round coordinate X or Y value in calculations to this
+    double MARGE = 0.001;   // snap with in this range points to lines in the intersection routines
+                          // should always be > DGRID  a  MARGE >= 10*DGRID is oke
+                          // this is also used to remove small segments and to decide when
+                          // two segments are in line.
+    double CORRECTIONFACTOR = 500.0;  // correct the polygons by this number
+	double CORRECTIONABER   = CArea::m_accuracy;    // the accuracy for the rounded shapes used in correction
+    double ROUNDFACTOR      = 1.5;    // when will we round the correction shape to a circle
+    double SMOOTHABER       = 10.0;   // accuracy when smoothing a polygon
+    double MAXLINEMERGE     = 1000.0; // leave as is, segments of this length in smoothen
+ 
+
+    // DGRID is only meant to make fractional parts of input data which 
+    // are doubles, part of the integers used in vertexes within the boolean algorithm.
+    // Within the algorithm all input data is multiplied with DGRID
+    
+    // space for extra intersection inside the boolean algorithms
+    // only change this if there are problems
+    int GRID =10000;
+
+    booleng->SetMarge( MARGE );
+    booleng->SetGrid( GRID );
+    booleng->SetDGrid( DGRID );
+    booleng->SetCorrectionFactor( CORRECTIONFACTOR );
+    booleng->SetCorrectionAber( CORRECTIONABER );
+    booleng->SetSmoothAber( SMOOTHABER );
+    booleng->SetMaxlinemerge( MAXLINEMERGE );
+    booleng->SetRoundfactor( ROUNDFACTOR );
+}
 
 void CArea::Subtract(const CArea& a2)
 {
@@ -144,7 +281,8 @@ void CArea::SetFromResult( Bool_Engine* booleng )
 
 	while ( booleng->StartPolygonGet() )
     {
-		CCurve curve;
+		m_curves.push_back(CCurve());
+		CCurve &curve = m_curves.back();
 
         // foreach point in the polygon
         while ( booleng->PolygonHasMorePoints() )
@@ -154,8 +292,16 @@ void CArea::SetFromResult( Bool_Engine* booleng )
 			curve.m_vertices.push_back(vertex);
         }
 		curve.m_vertices.push_back(curve.m_vertices.front()); // make a copy of the first point at the end
+
+		curve.FitArcs();
         booleng->EndPolygonGet();
-		m_curves.push_back(curve);
     }
 }
 
+void CArea::FitArcs(){
+	for(std::vector<CCurve>::iterator It = m_curves.begin(); It != m_curves.end(); It++)
+	{
+		CCurve& curve = *It;
+		curve.FitArcs();
+	}
+}
