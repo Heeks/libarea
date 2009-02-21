@@ -15,4 +15,5 @@ public:
 	Arc(const Point& s, const Point& e, const Point& c, bool dir):m_s(s), m_e(e), m_c(c), m_dir(dir){}
 
 	void SetDirWithPoint(const Point& p); // set m_dir, such that this point lies between m_s and m_e
+	double IncludedAngle(); // always > 0
 };
