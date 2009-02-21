@@ -23,9 +23,23 @@ bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& migh
 	// returns true, if arc added
 	if(might_be_an_arc.size() < 2)return false;
 
+	// find middle point
+	int num = might_be_an_arc.size();
+	int i = 0;
+	const CVertex* mid_vt = NULL;
+	int mid_i = (num-1)/2;
+	for(std::list<const CVertex*>::iterator It = might_be_an_arc.begin(); It != might_be_an_arc.end(); It++, i++)
+	{
+		if(i == mid_i)
+		{
+			mid_vt = *It;
+			break;
+		}
+	}
+
 	// create a circle to test
 	Point p0(prev_vt.m_p[0], prev_vt.m_p[1]);
-	Point p1(might_be_an_arc.front()->m_p[0], might_be_an_arc.front()->m_p[1]);
+	Point p1(mid_vt->m_p[0], mid_vt->m_p[1]);
 	Point p2(might_be_an_arc.back()->m_p[0], might_be_an_arc.back()->m_p[1]);
 	Circle c(p0, p1, p2);
 
@@ -44,7 +58,7 @@ bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& migh
 	arc.m_e = might_be_an_arc.back()->m_p;
 	arc.SetDirWithPoint(might_be_an_arc.front()->m_p);
 
-	return true;
+	return arc.IncludedAngle() < 3.15; // We don't want full arcs, so limit to about 180 degrees
 }
 
 void CCurve::AddArcOrLines(bool check_for_arc, std::list<CVertex> &new_vertices, std::list<const CVertex*>& might_be_an_arc, Arc &arc, bool &arc_found, bool &arc_added)
@@ -62,19 +76,19 @@ void CCurve::AddArcOrLines(bool check_for_arc, std::list<CVertex> &new_vertices,
 			arc_found = false;
 			const CVertex* back_vt = might_be_an_arc.back();
 			might_be_an_arc.clear();
-			might_be_an_arc.push_back(back_vt);
+			if(check_for_arc)might_be_an_arc.push_back(back_vt);
 		}
 		else
 		{
 			const CVertex* back_vt = might_be_an_arc.back();
-			might_be_an_arc.pop_back();
+			if(check_for_arc)might_be_an_arc.pop_back();
 			for(std::list<const CVertex*>::iterator It = might_be_an_arc.begin(); It != might_be_an_arc.end(); It++)
 			{
 				const CVertex* v = *It;
 				new_vertices.push_back(*v);
 			}
 			might_be_an_arc.clear();
-			might_be_an_arc.push_back(back_vt);
+			if(check_for_arc)might_be_an_arc.push_back(back_vt);
 		}
 	}
 }
@@ -108,7 +122,7 @@ void CCurve::FitArcs()
 		}
 	}
 
-	AddArcOrLines(false, new_vertices, might_be_an_arc, arc, arc_found, arc_added);
+	if(might_be_an_arc.size() > 0)AddArcOrLines(false, new_vertices, might_be_an_arc, arc, arc_found, arc_added);
 
 	if(arc_added)
 	{
