@@ -755,7 +755,7 @@ Node* KBoolLine::OffsetContour(KBoolLine* const nextline,Node* _last_ins, double
 	// make a node from this point
 	offs_end = new Node(GetEndNode(), m_GC);
 	Virtual_Point(offs_end,factor);
-	offs_currentlink=new KBoolLink(0, _last_ins,offs_end, m_GC);
+	offs_currentlink=new KBoolLink(0, m_link->m_user_data, _last_ins,offs_end, m_GC);
 	offs_currentline.Set(offs_currentlink);
 
 	offs_bgn_next = new Node(nextline->m_link->GetBeginNode(), m_GC);
@@ -764,7 +764,7 @@ Node* KBoolLine::OffsetContour(KBoolLine* const nextline,Node* _last_ins, double
 	offs_end_next = new Node(nextline->m_link->GetEndNode(), m_GC);
 	nextline->Virtual_Point(offs_end_next,factor);
 
-	offs_nextlink=new KBoolLink(0, offs_bgn_next, offs_end_next, m_GC);
+	offs_nextlink=new KBoolLink(0, m_link->m_user_data, offs_bgn_next, offs_end_next, m_GC);
 	offs_nextline.Set(offs_nextlink);
 
 	offs_currentline.CalculateLineParameters();
@@ -799,7 +799,7 @@ Node* KBoolLine::OffsetContour_rounded(KBoolLine* const nextline,Node* _last_ins
 	*_last_ins = *GetBeginNode();
 	Virtual_Point(_last_ins,factor);
 	Virtual_Point(offs_end,factor);
-	offs_currentlink=new KBoolLink(0, _last_ins,offs_end, m_GC);
+	offs_currentlink=new KBoolLink(0, m_link->m_user_data, _last_ins,offs_end, m_GC);
 	offs_currentline.Set(offs_currentlink);
 
 	offs_bgn_next = new Node(nextline->m_link->GetBeginNode(), m_GC);
@@ -808,7 +808,7 @@ Node* KBoolLine::OffsetContour_rounded(KBoolLine* const nextline,Node* _last_ins
 	offs_end_next = new Node(nextline->m_link->GetEndNode(), m_GC);
 	nextline->Virtual_Point(offs_end_next,factor);
 
-	offs_nextlink=new KBoolLink(0, offs_bgn_next, offs_end_next, m_GC);
+	offs_nextlink=new KBoolLink(0, m_link->m_user_data, offs_bgn_next, offs_end_next, m_GC);
 	offs_nextline.Set(offs_nextlink);
 
 	offs_currentline.CalculateLineParameters();
@@ -837,7 +837,7 @@ Node* KBoolLine::OffsetContour_rounded(KBoolLine* const nextline,Node* _last_ins
 		Node* endarc= new Node(offs_bgn_next, m_GC);
 		shape->AddLink(offs_currentlink);
 		delete offs_nextlink;
-		shape->CreateArc(GetEndNode(), &offs_currentline, endarc,fabs(factor),m_GC->GetInternalCorrectionAber());
+		shape->CreateArc(GetEndNode(), &offs_currentline, endarc,fabs(factor),m_GC->GetInternalCorrectionAber(), m_link->m_user_data);
 		return(endarc);
 	}
 }
@@ -931,13 +931,13 @@ bool KBoolLine::Create_Ring_Shape(KBoolLine* nextline,Node** _last_ins_left,Node
 				Virtual_Point(_current,factor);
 
 				// make a link between the current and the previous and add this to graph
-				shape->AddLink(*_last_ins_left, _current);
+				shape->AddLink(*_last_ins_left, _current, m_link->m_user_data);
 				*_last_ins_left=_current;
 
 				_current = new Node(m_link->GetEndNode(), m_GC);
 				Virtual_Point(_current,-factor);
 
-				shape->AddLink(*_last_ins_right, _current);
+				shape->AddLink(*_last_ins_right, _current, m_link->m_user_data);
 				*_last_ins_right=_current;
 			}
 			break;
@@ -1005,7 +1005,7 @@ void KBoolLine::Create_Begin_Shape(KBoolLine* nextline,Node** _last_ins_left,Nod
 			*_last_ins_right = new Node(nextline->m_link->GetBeginNode(), m_GC);
 			nextline->Virtual_Point(*_last_ins_right,-factor);
 
-			shape->AddLink(*_last_ins_left, *_last_ins_right);
+			shape->AddLink(*_last_ins_left, *_last_ins_right, m_link->m_user_data);
 
 			*_last_ins_left=OffsetContour_rounded(nextline,*_last_ins_left,factor,shape);
 		}
@@ -1018,7 +1018,7 @@ void KBoolLine::Create_Begin_Shape(KBoolLine* nextline,Node** _last_ins_left,Nod
 			*_last_ins_right = new Node(m_link->GetEndNode(), m_GC);
 			Virtual_Point(*_last_ins_right,-factor);
 
-			shape->AddLink(*_last_ins_left, *_last_ins_right);
+			shape->AddLink(*_last_ins_left, *_last_ins_right, m_link->m_user_data);
 
 			*_last_ins_right=OffsetContour_rounded(nextline,*_last_ins_right,-factor,shape);
 		}
@@ -1032,7 +1032,7 @@ void KBoolLine::Create_Begin_Shape(KBoolLine* nextline,Node** _last_ins_left,Nod
 			*_last_ins_right = new Node(nextline->m_link->GetBeginNode(), m_GC);
 			Virtual_Point(*_last_ins_right,-factor);
 
-			shape->AddLink(*_last_ins_left, *_last_ins_right);
+			shape->AddLink(*_last_ins_left, *_last_ins_right, m_link->m_user_data);
 		}
 		break;
 	}//end switch
@@ -1052,22 +1052,22 @@ void KBoolLine::Create_End_Shape(KBoolLine* nextline,Node* _last_ins_left,Node* 
 		{
 			_current = new Node(m_link->GetEndNode(), m_GC);
 			Virtual_Point(_current,-factor);
-			shape->AddLink(_last_ins_right, _current);
+			shape->AddLink(_last_ins_right, _current, m_link->m_user_data);
 			_last_ins_right=_current;
 
 			_last_ins_left=OffsetContour_rounded(nextline,_last_ins_left,factor,shape);
-			shape->AddLink(_last_ins_left,_last_ins_right);
+			shape->AddLink(_last_ins_left,_last_ins_right, m_link->m_user_data);
 		}
 		break;
 		case IS_LEFT :
 		{
 			_current = new Node(m_link->GetEndNode(), m_GC);
 			Virtual_Point(_current,factor);
-			shape->AddLink(_last_ins_left, _current);
+			shape->AddLink(_last_ins_left, _current, m_link->m_user_data);
 			_last_ins_left=_current;
 
 			_last_ins_right=OffsetContour_rounded(nextline,_last_ins_right,-factor,shape);
-			shape->AddLink(_last_ins_right, _last_ins_left);
+			shape->AddLink(_last_ins_right, _last_ins_left, m_link->m_user_data);
 		}
 		break;
 		// Line 2 lies on this line
@@ -1075,15 +1075,15 @@ void KBoolLine::Create_End_Shape(KBoolLine* nextline,Node* _last_ins_left,Node* 
 		{
 			_current = new Node(m_link->GetEndNode(), m_GC);
 			Virtual_Point(_current,factor);
-			shape->AddLink(_last_ins_left, _current);
+			shape->AddLink(_last_ins_left, _current, m_link->m_user_data);
 			_last_ins_left=_current;
 
 			_current = new Node(m_link->GetEndNode(), m_GC);
 			Virtual_Point(_current,-factor);
-			shape->AddLink(_last_ins_right, _current);
+			shape->AddLink(_last_ins_right, _current, m_link->m_user_data);
 			_last_ins_right=_current;
 
-			shape->AddLink(_last_ins_left, _last_ins_right);
+			shape->AddLink(_last_ins_left, _last_ins_right, m_link->m_user_data);
 		}
 		break;
 	}//end switch
@@ -1107,7 +1107,7 @@ bool KBoolLine::ProcessCrossings(TDLI<KBoolLink>* _LI)
 	// Make new links :
 	while (!linecrosslist->empty())
 	{
-		dummy=new KBoolLink(m_link->GetGraphNum(),(Node*) linecrosslist->tailitem(),last, m_GC);
+		dummy=new KBoolLink(m_link->GetGraphNum(), m_link->m_user_data, (Node*) linecrosslist->tailitem(),last, m_GC);
       dummy->SetBeenHere();
 		dummy->SetGroup(m_link->Group());
       _LI->insbegin(dummy);

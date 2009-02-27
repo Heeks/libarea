@@ -17,8 +17,9 @@ public:
 	int m_type; // 0 - line ( or start point ), 1 - anti-clockwise arc, -1 - clockwise arc
 	double m_p[2]; // end point
 	double m_c[2]; // centre point in absolute coordinates
+	int m_user_data;
 
-	CVertex(int type, double x, double y, double cx, double cy);
+	CVertex(int type, double x, double y, double cx, double cy, int user_data = 0);
 };
 
 class CCurve

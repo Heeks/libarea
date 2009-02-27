@@ -426,7 +426,7 @@ bool Bool_Engine::StartPolygonAdd(GroupType A_or_B)
     return true;
 }
 
-bool Bool_Engine::AddPoint(double x, double y)
+bool Bool_Engine::AddPoint(double x, double y, int user_data)
 {
    if (m_GraphToAdd == NULL){return false;}
 
@@ -469,7 +469,7 @@ bool Bool_Engine::AddPoint(double x, double y)
       }
 #endif
 
-		m_GraphToAdd->AddLink(m_lastNodeToAdd, myNode);
+		m_GraphToAdd->AddLink(m_lastNodeToAdd, myNode, user_data);
 		m_lastNodeToAdd = (Node *) myNode;
    }
 
@@ -480,7 +480,7 @@ bool Bool_Engine::EndPolygonAdd()
 {
    if (m_GraphToAdd == NULL) {return false;}
 
-   m_GraphToAdd->AddLink(m_lastNodeToAdd, m_firstNodeToAdd);
+   m_GraphToAdd->AddLink(m_lastNodeToAdd, m_firstNodeToAdd, 0);
    m_GraphToAdd->SetGroup(m_groupType);
    m_GraphToAdd = NULL;
    m_lastNodeToAdd  = NULL;
@@ -572,6 +572,11 @@ kbEdgeType Bool_Engine::GetPolygonPointEdgeType()
             return KB_INSIDE_EDGE;
         else
             return KB_OUTSIDE_EDGE;
+}
+
+int Bool_Engine::GetPolygonPointUserData()
+{
+     return m_getLink->m_user_data;
 }
 
 

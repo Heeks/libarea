@@ -420,7 +420,7 @@ class A2DKBOOLDLLEXP Bool_Engine {
    bool StartPolygonAdd( GroupType A_or_B );
 
    //! see StartPolygonAdd
-   bool AddPoint(double x, double y);
+   bool AddPoint(double x, double y, int user_data);
 
    //! see StartPolygonAdd
    bool EndPolygonAdd();
@@ -470,6 +470,8 @@ class A2DKBOOLDLLEXP Bool_Engine {
 
    //! an other way to get the type of segment.
    kbEdgeType GetPolygonPointEdgeType();
+
+   int GetPolygonPointUserData();
 
 	//! see StartPolygonGet()
    /*!

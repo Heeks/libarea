@@ -55,7 +55,7 @@ class A2DKBOOLDLLEXP Graph
 		void 		 Rotate(bool plus90);
 
       //! adds a link to the linklist
-		void		 AddLink(Node *begin,Node *end);  			
+		void		 AddLink(Node *begin,Node *end, int user_data);  			
 
       //! adds a link to the linklist
 		void		 AddLink(KBoolLink *a_link);  
@@ -115,8 +115,8 @@ class A2DKBOOLDLLEXP Graph
 		void        MakeRing(GraphList* Result,double factor);
 		void        CreateRing(GraphList *ring,double factor);
 		void        CreateRing_fast(GraphList *ring,double factor);
-		void        CreateArc(Node* center, KBoolLine* incoming, Node* end,double radius,double aber);
-		void        CreateArc(Node* center, Node* begin, Node* end,double radius,bool clock,double aber);
+		void        CreateArc(Node* center, KBoolLine* incoming, Node* end,double radius,double aber, int user_data);
+		void        CreateArc(Node* center, Node* begin, Node* end,double radius,bool clock,double aber, int user_data);
 		void        MakeOneDirection();
 		void        Make_Rounded_Shape(KBoolLink* a_link, double factor);
 		bool 		   MakeClockWise();

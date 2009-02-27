@@ -231,11 +231,11 @@ void Graph::AddLink(KBoolLink *a_link)
 
 // Add a link to the graph, by giving it two nodes
 // the link is then made and added to the graph
-void Graph::AddLink(Node *begin, Node *end)
+void Graph::AddLink(Node *begin, Node *end, int user_data)
 {
 	 assert(begin && end);
 	 assert(begin != end);
-	 AddLink(new KBoolLink(0, begin, end, _GC));
+	 AddLink(new KBoolLink(0, user_data, begin, end, _GC));
 }
 
 
@@ -922,13 +922,14 @@ bool Graph::Simplify( B_INT Marge )
 			{
 				// YES !!!!!
 				int number = _LI.item()->GetGraphNum();
+				int user_data = _LI.item()->m_user_data;
 				delete _LI.item();
 				_LI.remove();
 
             if (_LI.hitroot())
                _LI.tohead();
 
-				KBoolLink *newlink = new KBoolLink(number, new_begin, new_end, _GC);
+				KBoolLink *newlink = new KBoolLink(number, user_data, new_begin, new_end, _GC);
 				newlink->SetGroup(mygroup);
 
 				_LI.insend(newlink);
@@ -1747,17 +1748,17 @@ void Graph::Correction( GraphList* Result, double factor )
  			// get the other node on the link
 			_last = _current->GetOther(_last);
         // make a node from this point
-         _end = new Node(_last, _GC);
+			_end = new Node(_last, _GC);
 
          // make a link between begin and end
-         original->AddLink(_begin, _end);
+         original->AddLink(_begin, _end, _current->m_user_data);
 
          _begin=_end;
  			_current = _current->Forth(_last);
       }
 
       // make a link between the _begin and the first to close the graph
-      original->AddLink(_begin, _first);
+      original->AddLink(_begin, _first, _current->m_user_data);
    }
 
 	SetNumber(1);
@@ -2070,7 +2071,7 @@ void Graph::CreateRing_fast( GraphList *ring, double factor )
 //end point of arc
 //radius of arc
 //aberation for generating the segments
-void Graph::CreateArc(Node* center, Node* begin, Node* end,double radius,bool clock,double aber)
+void Graph::CreateArc(Node* center, Node* begin, Node* end,double radius,bool clock,double aber, int user_data)
 {
 	double phi,dphi,dx,dy;
 	int Segments;
@@ -2130,22 +2131,22 @@ void Graph::CreateArc(Node* center, Node* begin, Node* end,double radius,bool cl
 
 	  _current = new Node((B_INT) (center->GetX() + radius * cos(phi-dphi)),
 								 (B_INT) (center->GetY() + radius * sin(phi-dphi)), _GC);
-	  AddLink(_last_ins, _current);
+	  AddLink(_last_ins, _current, user_data);
 
 	  _last_ins=_current;
 	}
 
 	// make a node from the endnode of link
-	AddLink(_last_ins, end);
+	AddLink(_last_ins, end, user_data);
 }
 
-void Graph::CreateArc(Node* center, KBoolLine* incoming, Node* end,double radius,double aber)
+void Graph::CreateArc(Node* center, KBoolLine* incoming, Node* end,double radius,double aber, int user_data)
 {
 	double distance=0;
 	if (incoming->PointOnLine(center, distance, _GC->GetAccur()) == RIGHT_SIDE)
-		CreateArc(center,incoming->GetEndNode(),end,radius,true,aber);
+		CreateArc(center,incoming->GetEndNode(),end,radius,true,aber, user_data);
 	else
-		CreateArc(center,incoming->GetEndNode(),end,radius,false,aber);
+		CreateArc(center,incoming->GetEndNode(),end,radius,false,aber, user_data);
 }
 
 void Graph::MakeOneDirection()
@@ -2228,7 +2229,7 @@ void	Graph::Make_Rounded_Shape( KBoolLink* a_link, double factor)
 	theline.Virtual_Point(_current,factor);
 
 	// make a link between the current and the previous and add this to graph
-	AddLink(_last_ins, _current);
+	AddLink(_last_ins, _current, a_link->m_user_data);
 	_last_ins=_current;
 
 	// make a half circle around the clock with the opposite point as
@@ -2243,7 +2244,7 @@ void	Graph::Make_Rounded_Shape( KBoolLink* a_link, double factor)
 	  _current = new Node((B_INT) (a_link->GetEndNode()->GetX() + factor * cos(phi-dphi)),
 								 (B_INT) (a_link->GetEndNode()->GetY() + factor * sin(phi-dphi)), _GC);
 
-	  AddLink(_last_ins, _current);
+	  AddLink(_last_ins, _current, a_link->m_user_data);
 
 	  _last_ins=_current;
 	}
@@ -2251,13 +2252,13 @@ void	Graph::Make_Rounded_Shape( KBoolLink* a_link, double factor)
 	// make a node from the endnode of link
 	_current = new Node(a_link->GetEndNode(), _GC);
 	theline.Virtual_Point(_current,-factor);
-	AddLink(_last_ins, _current);
+	AddLink(_last_ins, _current, a_link->m_user_data);
 	_last_ins=_current;
 
 	// make a node from this beginnode of link
 	_current = new Node(a_link->GetBeginNode(), _GC);
 	theline.Virtual_Point(_current,-factor);
-	AddLink(_last_ins, _current);
+	AddLink(_last_ins, _current, a_link->m_user_data);
 	_last_ins=_current;
 
 	for (i=1; i<Segments; i++)
@@ -2269,13 +2270,13 @@ void	Graph::Make_Rounded_Shape( KBoolLink* a_link, double factor)
 	  _current = new Node((B_INT)(a_link->GetBeginNode()->GetX() + factor * cos(phi-dphi)),
 								 (B_INT)(a_link->GetBeginNode()->GetY() + factor * sin(phi-dphi)), _GC);
 
-	  AddLink(_last_ins, _current);
+	  AddLink(_last_ins, _current, a_link->m_user_data);
 
 	  _last_ins=_current;
 	}
 
 	// make a link between the last and the first to close the graph
-	AddLink(_last_ins, _first);
+	AddLink(_last_ins, _first, a_link->m_user_data);
 };
 
 //make the graph clockwise orientation,

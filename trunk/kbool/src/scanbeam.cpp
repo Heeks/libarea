@@ -1063,9 +1063,9 @@ bool ScanBeam::ProcessHoles( bool atinsert, TDLI<KBoolLink>* _LI )
                leftnode = link->GetEndNode();
 
          Node *node_A = new Node(topnode->GetX(),Y, _GC);
-         KBoolLink *link_A = new KBoolLink(0, leftnode, node_A, _GC);
-         KBoolLink *link_B = new KBoolLink(0, node_A, topnode, _GC);
-         KBoolLink *link_BB = new KBoolLink(0, topnode, node_A, _GC);
+         KBoolLink *link_A = new KBoolLink(0, link->m_user_data, leftnode, node_A, _GC);
+         KBoolLink *link_B = new KBoolLink(0, link->m_user_data, node_A, topnode, _GC);
+         KBoolLink *link_BB = new KBoolLink(0, link->m_user_data, topnode, node_A, _GC);
          KBoolLink *link_D = _BI.item()->GetLink();
          link_D->Replace(leftnode,node_A);
          _LI->insbegin(link_A);

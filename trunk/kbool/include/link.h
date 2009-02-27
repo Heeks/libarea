@@ -45,7 +45,7 @@ class A2DKBOOLDLLEXP KBoolLink
 		KBoolLink(Bool_Engine* GC);
 
 		//! contructors 
-		KBoolLink(int graphnr, Node* begin, Node* end, Bool_Engine* GC);
+		KBoolLink(int graphnr, int user_data, Node* begin, Node* end, Bool_Engine* GC);
 
 		//! contructors 
 		KBoolLink(Node *begin, Node *end, Bool_Engine* GC);
@@ -173,6 +173,9 @@ class A2DKBOOLDLLEXP KBoolLink
       void SetRecordNode( DL_Node<Record*>* recordNode ) { m_record = recordNode; }
 
       DL_Node<Record*>* GetRecordNode() { return m_record; }
+
+		// user data
+		int m_user_data;
 
 	protected:
 

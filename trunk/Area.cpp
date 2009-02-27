@@ -8,12 +8,13 @@
 #include "Circle.h"
 #include "Arc.h"
 
-CVertex::CVertex(int type, double x, double y, double cx, double cy):m_type(type)
+CVertex::CVertex(int type, double x, double y, double cx, double cy, int user_data):m_type(type)
 {
 	m_p[0] = x;
 	m_p[1] = y;
 	m_c[0] = cx;
 	m_c[1] = cy;
+	m_user_data = user_data;
 }
 
 bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& might_be_an_arc, Arc &arc)
@@ -57,6 +58,7 @@ bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& migh
 	arc.m_s = prev_vt.m_p;
 	arc.m_e = might_be_an_arc.back()->m_p;
 	arc.SetDirWithPoint(might_be_an_arc.front()->m_p);
+	arc.m_user_data = might_be_an_arc.back()->m_user_data;
 
 	return arc.IncludedAngle() < 3.15; // We don't want full arcs, so limit to about 180 degrees
 }
@@ -71,7 +73,7 @@ void CCurve::AddArcOrLines(bool check_for_arc, std::list<CVertex> &new_vertices,
 	{
 		if(arc_found)
 		{
-			new_vertices.push_back(CVertex(arc.m_dir ? 1:-1, arc.m_e.x, arc.m_e.y, arc.m_c.x, arc.m_c.y));
+			new_vertices.push_back(CVertex(arc.m_dir ? 1:-1, arc.m_e.x, arc.m_e.y, arc.m_c.x, arc.m_c.y, arc.m_user_data));
 			arc_added = true;
 			arc_found = false;
 			const CVertex* back_vt = might_be_an_arc.back();
@@ -195,7 +197,7 @@ void CArea::AddVertex(Bool_Engine* booleng, CVertex& vertex, CVertex* prev_verte
 {
 	if(vertex.m_type == 0 || prev_vertex == NULL)
 	{
-		booleng->AddPoint(vertex.m_p[0], vertex.m_p[1]);
+		booleng->AddPoint(vertex.m_p[0], vertex.m_p[1], vertex.m_user_data);
 	}
 	else
 	{
@@ -258,7 +260,7 @@ void CArea::AddVertex(Bool_Engine* booleng, CVertex& vertex, CVertex* prev_verte
 			double nx = vertex.m_c[0] + radius * cos(phi-dphi);
 			double ny = vertex.m_c[1] + radius * sin(phi-dphi);
 
-			booleng->AddPoint(nx, ny);
+			booleng->AddPoint(nx, ny, vertex.m_user_data);
 
 			px = nx;
 			py = ny;
@@ -268,10 +270,12 @@ void CArea::AddVertex(Bool_Engine* booleng, CVertex& vertex, CVertex* prev_verte
 
 void CArea::MakeGroup( Bool_Engine* booleng, bool a_not_b )
 {
-	booleng->StartPolygonAdd(a_not_b ? GROUP_A:GROUP_B);
-	// to do, separate curves
+	booleng->SetLinkHoles(true);
 
-	// for now, just assume one curve
+		booleng->StartPolygonAdd(a_not_b ? GROUP_A:GROUP_B);
+		bool first_curve = true;
+		CVertex* last_vertex = NULL;
+
 	for(std::vector<CCurve>::iterator It = m_curves.begin(); It != m_curves.end(); It++)
 	{
 		CCurve& curve = *It;
@@ -281,10 +285,18 @@ void CArea::MakeGroup( Bool_Engine* booleng, bool a_not_b )
 			CVertex& vertex = *It2;
 			AddVertex(booleng, vertex, prev_vertex);
 			prev_vertex = &vertex;
+			if(first_curve)last_vertex = &vertex;
 		}
+
+				if(!first_curve)
+				{
+				booleng->AddPoint(last_vertex->m_p[0], last_vertex->m_p[1], 0);
+			}
+
+				first_curve = false;
 	}
+		booleng->EndPolygonAdd();
 	
-	booleng->EndPolygonAdd();
 }
 
 void CArea::SetFromResult( Bool_Engine* booleng )
@@ -301,7 +313,7 @@ void CArea::SetFromResult( Bool_Engine* booleng )
         // foreach point in the polygon
         while ( booleng->PolygonHasMorePoints() )
         {
-			CVertex vertex(0, booleng->GetPolygonXPoint(), booleng->GetPolygonYPoint(), 0.0, 0.0);
+			CVertex vertex(0, booleng->GetPolygonXPoint(), booleng->GetPolygonYPoint(), 0.0, 0.0, booleng->GetPolygonPointUserData());
 
 			curve.m_vertices.push_back(vertex);
         }

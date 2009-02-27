@@ -67,6 +67,8 @@ static PyObject* area_delete(PyObject* self, PyObject* args)
 	Py_RETURN_NONE;
 }
 
+static int span_number = 1;
+
 static PyObject* area_add_point(PyObject* self, PyObject* args)
 {
 	double x, y, i, j;
@@ -84,7 +86,8 @@ static PyObject* area_add_point(PyObject* self, PyObject* args)
 		if(sp && k->m_curves[curve_index].m_vertices.size() == 0){ const char* str = "can't add arc to area as first point"; printf(str); throw(str);}
 
 		// add the vertex
-		k->m_curves[curve_index].m_vertices.push_back(CVertex(sp, x, y, i, j));
+		k->m_curves[curve_index].m_vertices.push_back(CVertex(sp, x, y, i, j, span_number));
+		span_number++;
 	}
 
 	Py_RETURN_NONE;
