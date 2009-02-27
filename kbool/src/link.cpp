@@ -32,13 +32,14 @@ KBoolLink::KBoolLink(Bool_Engine* GC)
 {
    _GC=GC;
 	Reset();
+	m_user_data = 0;
 }
 
 
 //
 // This constructor makes this link a valid part of a graph
 //
-KBoolLink::KBoolLink(int graphnr, Node *begin, Node *end, Bool_Engine* GC)
+KBoolLink::KBoolLink(int graphnr, int user_data, Node *begin, Node *end, Bool_Engine* GC)
 {
    _GC=GC;
 	Reset();
@@ -49,6 +50,7 @@ KBoolLink::KBoolLink(int graphnr, Node *begin, Node *end, Bool_Engine* GC)
 	m_beginnode = begin;
 	m_endnode = end;
 	m_graphnum = graphnr;
+	m_user_data = user_data;
 }
 
 //
@@ -65,6 +67,7 @@ KBoolLink::KBoolLink(Node *begin, Node *end, Bool_Engine* GC)
 	m_beginnode=begin;
 	m_endnode=end;
 	m_graphnum=0;
+	m_user_data = 0;
 }
 
 
