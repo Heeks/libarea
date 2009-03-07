@@ -115,7 +115,7 @@ static PyObject* area_offset(PyObject* self, PyObject* args)
 	if (!PyArg_ParseTuple(args, "id", &ik, &inwards)) return NULL;
 
 	CArea* k = (CArea*)ik;
-	int ret = 0;
+	//int ret = 0;
 
 	if(valid_areas.find(k) != valid_areas.end())
 	{
@@ -270,6 +270,24 @@ static PyObject* area_get_vertex(PyObject* self, PyObject* args)
 	return pTuple;
 }
 
+static PyObject* area_add_curve(PyObject* self, PyObject* args)
+{
+	int ik, ij, ii;
+	if (!PyArg_ParseTuple(args, "iii", &ik, &ij, &ii)) return NULL;
+
+	CArea* k = (CArea*)ik;
+	CArea* j = (CArea*)ij;
+	if(valid_areas.find(k) != valid_areas.end() && valid_areas.find(j) != valid_areas.end())
+	{
+        if(ii >= 0 && ii < (int)j->m_curves.size()){
+            // add curve
+            k->m_curves.push_back(j->m_curves[ii]);
+        }
+	}
+
+	Py_RETURN_NONE;
+}
+
 static PyMethodDef AreaMethods[] = {
 	{"new", area_new, METH_VARARGS , ""},
 	{"exists", area_exists, METH_VARARGS , ""},
@@ -283,6 +301,7 @@ static PyMethodDef AreaMethods[] = {
 	{"num_curves", area_num_curves, METH_VARARGS , ""},
 	{"num_vertices", area_num_vertices, METH_VARARGS , ""},
 	{"get_vertex", area_get_vertex, METH_VARARGS , ""},
+	{"add_curve", area_add_curve, METH_VARARGS , ""},
 	{NULL, NULL, 0, NULL}
 };
 
