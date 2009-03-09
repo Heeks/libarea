@@ -45,6 +45,10 @@ copies a1 to a2
 
     area.copy(a1, a2)
 
+
+===add_curve(a_to, a_from, curve)===
+add curve from a_from to a_to
+
 	
 ===num_curves, num_vertices, get_vertex===
 for getting the shape of a given area
