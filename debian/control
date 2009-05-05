@@ -1,0 +1,19 @@
+Source: libarea
+Priority: extra
+Maintainer: Joachim Steiger <ubuntu@hyte.de>
+Build-Depends: debhelper (>= 7), python-dev
+Standards-Version: 3.7.3
+Section: libs
+Homepage: http://code.google.com/p/libarea/
+
+Package: libarea1
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Area C++ class with a Python module
+ Derived from the kbool library written by Klaas Holwerda http://boolean.klaasholwerda.nl/bool.html.
+ .
+ This package contains the shared library.
+ .
+  Homepage: http://code.google.com/p/libarea/
+
