@@ -1,4 +1,4 @@
-import libarea as area
+import area
 
 a = area.new()
 area.add_point(a, 0, 10, 10, 0, 0)
