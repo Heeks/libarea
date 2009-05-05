@@ -30,6 +30,9 @@ install: $(LIBOUT)
 	chmod 644 $^
 	install $^ $(PREFIX)/lib/python`python -c "import sys; print sys.version[:3]"`/site-packages/
 
+test:
+	python test.py
+
 Arc.o: Arc.cpp
 	$(CC) -c $? ${CFLAGS} -o $@
 
