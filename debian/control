@@ -6,10 +6,10 @@ Standards-Version: 3.7.3
 Section: libs
 Homepage: http://code.google.com/p/libarea/
 
-Package: libarea1
+Package: libarea0
 Section: libs
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}
 Description: Area C++ class with a Python module
  Derived from the kbool library written by Klaas Holwerda http://boolean.klaasholwerda.nl/bool.html.
  .
