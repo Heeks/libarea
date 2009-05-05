@@ -306,7 +306,7 @@ static PyMethodDef AreaMethods[] = {
 };
 
 PyMODINIT_FUNC
-initlibarea(void)
+initarea(void)
 {
-	Py_InitModule("libarea", AreaMethods);
+	Py_InitModule("area", AreaMethods);
 }

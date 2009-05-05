@@ -1,6 +1,6 @@
 #Makefile for libarea
 
-PREFIX	= /usr
+PREFIX	= /usr/local
 HOME	= .
 CXX     = g++
 CC      = gcc
@@ -9,23 +9,26 @@ LDFLAGS = -shared -rdynamic `python-config --ldflags`
 LIBS    = -lstdc++ `python-config --libs`
 CFLAGS  = -Wall -I/usr/include `python-config --includes` -I./ -I./kbool/include -g -fPIC
 
-LIBNAME	= libarea
+LIBNAME	= area
 LIBOBJS	= Arc.o Area.o booleng.o Circle.o graph.o graphlst.o instonly.o line.o link.o lpoint.o node.o PythonStuff.o record.o scanbeam.o
-LIBOUT	= $(LIBNAME).so
+LIBDIR	= .libs/
+LIBOUT	= $(LIBDIR)$(LIBNAME).so
 
 all:	$(LIBOUT)
 
 $(LIBOUT): $(LIBOBJS)
+	@-mkdirhier $(LIBDIR)
 	$(LD) $(LDFLAGS) -fPIC -Wl,-soname,libarea.so.0 $(LIBOBJS) -o $(LIBOUT) $(LIBS)
 
 clean:
 	@-rm -f $(LIBOBJS)
 	@-rm -f $(LIBOUT)
+	@-rmdir $(LIBDIR)
 
 install: $(LIBOUT)
 	strip $^
 	chmod 644 $^
-	install $^ $(PREFIX)/lib
+	install $^ $(PREFIX)/lib/python`python -c "import sys; print sys.version[:3]"`/site-packages/
 
 Arc.o: Arc.cpp
 	$(CC) -c $? ${CFLAGS} -o $@
