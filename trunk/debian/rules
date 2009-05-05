@@ -32,7 +32,7 @@ build-stamp: configure-stamp
 	dh_testdir
 
 	# Add here commands to compile the package.
-	$(MAKE)
+	$(MAKE) PREFIX=/usr/
 
 	touch $@
 
@@ -54,7 +54,7 @@ install: build
 
 	# Add here commands to install the package into debian/tmp
 #	$(MAKE) DESTDIR=$(CURDIR)/debian/tmp install
-	$(MAKE) PREFIX=$(CURDIR)/debian/libarea1/usr install
+	$(MAKE) PREFIX=$(CURDIR)/debian/libarea0/usr install
 
 
 # Build architecture-independent files here.
