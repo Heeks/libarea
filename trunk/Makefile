@@ -28,8 +28,7 @@ clean:
 install: $(LIBOUT)
 	strip $^
 	chmod 644 $^
-	install $^ $(PREFIX)/lib/python`python -c "import sys; print sys.version[:3]"`/site-packages/
-
+	install $^ $(DESTDIR)$(PREFIX)/lib/python`python -c "import sys; print sys.version[:3]"`/site-packages/
 test:
 	python test.py
 
