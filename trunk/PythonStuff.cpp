@@ -288,6 +288,42 @@ static PyObject* area_add_curve(PyObject* self, PyObject* args)
 	Py_RETURN_NONE;
 }
 
+static void print_curve(const CCurve& c)
+{
+	unsigned int nvertices = c.m_vertices.size();
+	printf("number of vertices = %d\n", nvertices);
+	for(unsigned int i = 0; i< nvertices; i++)
+	{
+		const CVertex &vertex = c.m_vertices[i];
+		printf("vertex %d type = %d, x = %g, y = %g", i+1, vertex.m_type, vertex.m_p[0], vertex.m_p[1]);
+		if(vertex.m_type)printf(", xc = %g, yc = %g", vertex.m_c[0], vertex.m_c[1]);
+		printf("\n");
+	}
+}
+
+static void print_area(const CArea &a)
+{
+	for(unsigned int i = 0; i<a.m_curves.size(); i++)
+	{
+		const CCurve& curve = a.m_curves[i];
+		print_curve(curve);
+	}
+}
+
+static PyObject* area_print_area(PyObject* self, PyObject* args)
+{
+	int ik;
+	if (!PyArg_ParseTuple(args, "i", &ik)) return NULL;
+	CArea* k = (CArea*)ik;
+
+	if(valid_areas.find(k) != valid_areas.end())
+	{
+		print_area(*k);
+	}
+
+	Py_RETURN_NONE;
+}
+
 static PyMethodDef AreaMethods[] = {
 	{"new", area_new, METH_VARARGS , ""},
 	{"exists", area_exists, METH_VARARGS , ""},
@@ -302,6 +338,7 @@ static PyMethodDef AreaMethods[] = {
 	{"num_vertices", area_num_vertices, METH_VARARGS , ""},
 	{"get_vertex", area_get_vertex, METH_VARARGS , ""},
 	{"add_curve", area_add_curve, METH_VARARGS , ""},
+	{"print_area", area_print_area, METH_VARARGS , ""},
 	{NULL, NULL, 0, NULL}
 };
 
