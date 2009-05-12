@@ -86,7 +86,7 @@ static PyObject* area_add_point(PyObject* self, PyObject* args)
 		if(sp && k->m_curves[curve_index].m_vertices.size() == 0){ const char* str = "can't add arc to area as first point"; printf(str); throw(str);}
 
 		// add the vertex
-		k->m_curves[curve_index].m_vertices.push_back(CVertex(sp, x, y, i, j, span_number));
+		k->m_curves[curve_index].m_vertices.push_back(CVertex(sp, x * CArea::m_units, y * CArea::m_units, i * CArea::m_units, j * CArea::m_units, span_number));
 		span_number++;
 	}
 
@@ -119,7 +119,7 @@ static PyObject* area_offset(PyObject* self, PyObject* args)
 
 	if(valid_areas.find(k) != valid_areas.end())
 	{
-		k->Offset(inwards);
+		k->Offset(inwards * CArea::m_units);
 	}
 
 	Py_RETURN_NONE;
@@ -220,10 +220,10 @@ static PyObject* area_get_vertex(PyObject* self, PyObject* args)
 			{
 				CVertex& vertex = curve.m_vertices[index];
 				sp = vertex.m_type;
-				x = vertex.m_p[0];
-				y = vertex.m_p[1];
-				cx = vertex.m_c[0];
-				cy = vertex.m_c[1];
+				x = vertex.m_p[0] / CArea::m_units;
+				y = vertex.m_p[1] / CArea::m_units;
+				cx = vertex.m_c[0] / CArea::m_units;
+				cy = vertex.m_c[1] / CArea::m_units;
 			}
 		}
 	}
@@ -295,8 +295,8 @@ static void print_curve(const CCurve& c)
 	for(unsigned int i = 0; i< nvertices; i++)
 	{
 		const CVertex &vertex = c.m_vertices[i];
-		printf("vertex %d type = %d, x = %g, y = %g", i+1, vertex.m_type, vertex.m_p[0], vertex.m_p[1]);
-		if(vertex.m_type)printf(", xc = %g, yc = %g", vertex.m_c[0], vertex.m_c[1]);
+		printf("vertex %d type = %d, x = %g, y = %g", i+1, vertex.m_type, vertex.m_p[0] / CArea::m_units, vertex.m_p[1] / CArea::m_units);
+		if(vertex.m_type)printf(", xc = %g, yc = %g", vertex.m_c[0] / CArea::m_units, vertex.m_c[1] / CArea::m_units);
 		printf("\n");
 	}
 }
@@ -324,6 +324,13 @@ static PyObject* area_print_area(PyObject* self, PyObject* args)
 	Py_RETURN_NONE;
 }
 
+static PyObject* area_set_units(PyObject* self, PyObject* args)
+{
+	if (!PyArg_ParseTuple(args, "d", &CArea::m_units)) return NULL;
+
+	Py_RETURN_NONE;
+}
+
 static PyMethodDef AreaMethods[] = {
 	{"new", area_new, METH_VARARGS , ""},
 	{"exists", area_exists, METH_VARARGS , ""},
@@ -339,6 +346,7 @@ static PyMethodDef AreaMethods[] = {
 	{"get_vertex", area_get_vertex, METH_VARARGS , ""},
 	{"add_curve", area_add_curve, METH_VARARGS , ""},
 	{"print_area", area_print_area, METH_VARARGS , ""},
+	{"set_units", area_set_units, METH_VARARGS , ""},
 	{NULL, NULL, 0, NULL}
 };
 
