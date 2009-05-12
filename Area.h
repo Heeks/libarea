@@ -46,6 +46,7 @@ public:
 	std::vector<CCurve> m_curves;
 	static double m_round_corners_factor; // 1.0 for round 90 degree corners, 1.5 for square 90 degree corners
 	static double m_accuracy;
+	static double m_units; // 1.0 for mm, 25.4 for inches. All points are multiplied by this before going to the engine
 
 	static void ArmBoolEng( Bool_Engine* booleng );
 

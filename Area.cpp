@@ -138,6 +138,7 @@ void CCurve::FitArcs()
 
 double CArea::m_round_corners_factor = 1.5;
 double CArea::m_accuracy = 0.01;
+double CArea::m_units = 1.0;
 
 void CArea::ArmBoolEng( Bool_Engine* booleng )
 {
