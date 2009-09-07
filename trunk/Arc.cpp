@@ -1,5 +1,7 @@
 // Arc.cpp
 
+// copyright Dan Heeks, September 3rd 2009, license: GPL version 3 http://www.gnu.org/licenses/gpl-3.0.txt
+
 #include "Arc.h"
 
 void Arc::SetDirWithPoint(const Point& p)
