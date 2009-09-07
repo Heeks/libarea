@@ -1,5 +1,7 @@
 #summary The "pocket" executable
 
+http://libarea.googlecode.com/svn/wiki/pocket.png
+
 = Pocket =
 
 This command takes a DXF file and creates a pocketing tool path.
