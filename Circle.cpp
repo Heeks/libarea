@@ -1,5 +1,7 @@
 // Circle.cpp
 
+// copyright Dan Heeks, September 3rd 2009, license: GPL version 3 http://www.gnu.org/licenses/gpl-3.0.txt
+
 #include "Circle.h"
 
 Circle::Circle(const Point& p0, const Point& p1, const Point& p2)
