@@ -10,7 +10,7 @@ PocketParams::PocketParams()
 {
 	m_from_center = true;
 	m_round_corner_factor = 1.0;
-	m_material_allowance = 0.1;
+	m_material_allowance = 0.0;
 	m_step_over = 1.5;
 	m_clearance_height = 5;
 	m_start_depth = 0;
