@@ -14,7 +14,7 @@ _TCHAR txt_file[1024] = _T("output.txt");
 static PocketParams g_params;
 static CPath* g_path = NULL;
 
-void cut_area(const CArea& a)
+void cut_area(const CArea& a, double depth)
 {
 	for(unsigned int i = 0; i< a.m_curves.size(); i++)
 	{
@@ -35,7 +35,7 @@ void cut_area(const CArea& a)
                 g_path->OnRapidZ(g_params.m_rapid_down_to_height);
                 
                 //feed down
-                g_path->OnFeedZ(g_params.m_final_depth);
+                g_path->OnFeedZ(depth);
 			}
 			else
 			{
@@ -114,7 +114,7 @@ void pocket_area(const CArea& area, const PocketParams& params, CPath& path)
 		for(std::list<const CArea*>::iterator It = arealist.begin(); It != arealist.end(); It++)
 		{
 			const CArea* a = *It;
-			cut_area(*a);
+			cut_area(*a, depth);
 		}
 	}
 }
@@ -152,6 +152,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	// default pocket parameters
 	PocketParams params;
 
+	bool step_over_set = false;
+
 	// parse the command line parameters
 	for(int i = 1; i < argc; i++)
 	{
@@ -174,28 +176,29 @@ int _tmain(int argc, _TCHAR* argv[])
 					if(swscanf(argv[i], _T("%lf"), &params.m_round_corner_factor)!=1){wprintf(_T("couldn't read value for -r"));return 0;}
 					break;
 				case _T('m'):
-					if(swscanf(argv[i], _T("%lf"), &params.m_material_allowance)!=1){wprintf(_T("couldn't read value for -r"));return 0;}
+					if(swscanf(argv[i], _T("%lf"), &params.m_material_allowance)!=1){wprintf(_T("couldn't read value for -m"));return 0;}
 					break;
 				case _T('s'):
-					if(swscanf(argv[i], _T("%lf"), &params.m_step_over)!=1){wprintf(_T("couldn't read value for -r"));return 0;}
+					if(swscanf(argv[i], _T("%lf"), &params.m_step_over)!=1){wprintf(_T("couldn't read value for -s"));return 0;}
+					step_over_set = false;
 					break;
 				case _T('c'):
-					if(swscanf(argv[i], _T("%lf"), &params.m_clearance_height)!=1){wprintf(_T("couldn't read value for -r"));return 0;}
+					if(swscanf(argv[i], _T("%lf"), &params.m_clearance_height)!=1){wprintf(_T("couldn't read value for -c"));return 0;}
 					break;
 				case _T('t'):
-					if(swscanf(argv[i], _T("%lf"), &params.m_start_depth)!=1){wprintf(_T("couldn't read value for -r"));return 0;}
+					if(swscanf(argv[i], _T("%lf"), &params.m_start_depth)!=1){wprintf(_T("couldn't read value for -t"));return 0;}
 					break;
 				case _T('i'):
-					if(swscanf(argv[i], _T("%lf"), &params.m_step_down)!=1){wprintf(_T("couldn't read value for -r"));return 0;}
+					if(swscanf(argv[i], _T("%lf"), &params.m_step_down)!=1){wprintf(_T("couldn't read value for -i"));return 0;}
 					break;
 				case _T('z'):
-					if(swscanf(argv[i], _T("%lf"), &params.m_final_depth)!=1){wprintf(_T("couldn't read value for -r"));return 0;}
+					if(swscanf(argv[i], _T("%lf"), &params.m_final_depth)!=1){wprintf(_T("couldn't read value for -z"));return 0;}
 					break;
 				case _T('q'):
-					if(swscanf(argv[i], _T("%lf"), &params.m_rapid_down_to_height)!=1){wprintf(_T("couldn't read value for -r"));return 0;}
+					if(swscanf(argv[i], _T("%lf"), &params.m_rapid_down_to_height)!=1){wprintf(_T("couldn't read value for -q"));return 0;}
 					break;
 				case _T('d'):
-					if(swscanf(argv[i], _T("%lf"), &params.m_tool_diameter)!=1){wprintf(_T("couldn't read value for -r"));return 0;}
+					if(swscanf(argv[i], _T("%lf"), &params.m_tool_diameter)!=1){wprintf(_T("couldn't read value for -d"));return 0;}
 					break;
 				case _T('n'):
 					if(argv[i][0] == _T('c')) params.m_from_center = true;
@@ -204,6 +207,12 @@ int _tmain(int argc, _TCHAR* argv[])
 				}
 			}
 		}
+	}
+
+	if(!step_over_set)
+	{
+		// if step over is not set, default to half tool diameter
+		params.m_step_over = 0.5 * params.m_tool_diameter;
 	}
 
 	pocket_files(dxf_file, txt_file, params);

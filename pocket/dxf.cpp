@@ -882,6 +882,7 @@ void CDxfRead::DoRead(bool undoably)
 }
 
 const double touch_toler = 0.001;
+
 static bool touching(const double* p0, const double* p1)
 {
 	for(int i = 0; i<2; i++)
@@ -894,23 +895,41 @@ static bool touching(const double* p0, const double* p1)
 
 void AreaDxfRead::OnReadVertex(const double* s, const CVertex& v)
 {
+	bool reverse_span = false;
 
-	// if end point touching
-	if(m_curve && !touching(s, m_previous_end))
+	if(m_curve)
 	{
-		// add curve
-		m_area->m_curves.push_back(*m_curve);
-		m_curve = NULL;
+		bool is_touching = false;
+
+		if(touching(s, m_previous_end))
+		{
+			is_touching = true;
+		}
+		else if(touching(v.m_p, m_previous_end))
+		{
+			is_touching = true;
+			reverse_span = true;
+		}
+
+		// if end point touching
+		if(!is_touching)
+		{
+			// add curve
+			m_area->m_curves.push_back(*m_curve);
+			m_curve = NULL;
+		}
 	}
 
 	if(m_curve == NULL)
 	{
 		// start a new curve
 		m_curve = new CCurve();
+		m_curve->m_vertices.push_back(CVertex(0, s[0], s[1], 0, 0));
 	}
 
 	// add to curve
-	m_curve->m_vertices.push_back(v);
+	if(reverse_span)m_curve->m_vertices.push_back(CVertex(-v.m_type, s[0], s[1], v.m_c[0], v.m_c[1]));
+	else m_curve->m_vertices.push_back(v);
 
 	// remember end point
 	memcpy(m_previous_end, v.m_p, 2*sizeof(double));
