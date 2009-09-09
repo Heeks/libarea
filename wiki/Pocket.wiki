@@ -7,7 +7,7 @@ http://libarea.googlecode.com/svn/wiki/pocket.png
 This command takes a DXF file and creates a pocketing tool path.
 The output is a simplified G-code text file.
 
-I have built a Windows exectuable, see the downloads page http://code.google.com/p/libarea/downloads/list
+I have built a Windows executable, see the downloads page http://code.google.com/p/libarea/downloads/list
 This takes various parameters:
 
 -f input file, defaults to input.dxf
@@ -23,7 +23,13 @@ This takes various parameters:
 -d tool diameter, default 3
 -n from center, default center ( can be "center" or "outside" )
 
+== Islands ==
+
+You must draw the islands with a different direction than the outside shape; if the outside shape is clockwise the islands must be drawn anti-clockwise, if the ouside is anti-clockwise the islands must be clockwise. ( I plan to be able to automatically sort these out one day ).
+
 == Limitations ==
 
 The cutter plunges directly down into the material.
 Also, it rapids up and down between each step over to be sure not to cut through part of the shape. This is fine for cutting one-off shapes with a slot cutter, but is not optimised, and is no good for an endmill tool which can't plunge down into the material.
+
+http://libarea.googlecode.com/svn/wiki/pocket2.png
