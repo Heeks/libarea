@@ -134,7 +134,7 @@ void pocket_files(const _TCHAR* dxf_file, const _TCHAR* txt_file, const PocketPa
 	}
 
 	// open a text file to write to
-	CTextPath text_path(txt_file);
+	CTextPath text_path(txt_file, params.m_format_style);
 	if(text_path.Failed())
 	{
 		printf("text write failed, opening file %s", Ttc(txt_file));
@@ -203,6 +203,9 @@ int _tmain(int argc, _TCHAR* argv[])
 				case _T('n'):
 					if(argv[i][0] == _T('c')) params.m_from_center = true;
 					else params.m_from_center = false;
+					break;
+				case _T('p'):
+					if(swscanf(argv[i], _T("%d"), &params.m_format_style)!=1){wprintf(_T("couldn't read value for -p"));return 0;}
 					break;
 				}
 			}

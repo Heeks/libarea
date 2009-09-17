@@ -7,9 +7,12 @@
 class CTextPath: public CPath
 {
 	ofstream* m_ofs;
+	const char* num(double v);
 
 public:
-	CTextPath(const _TCHAR* txt_file);
+	int m_number_format;// 0 is like "3.141529", 1 is like "+00003.141"
+
+	CTextPath(const _TCHAR* txt_file, int format_style);
 	~CTextPath();
 
 	bool Failed();

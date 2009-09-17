@@ -18,4 +18,5 @@ PocketParams::PocketParams()
 	m_final_depth = -3;
 	m_rapid_down_to_height = 2;
 	m_tool_diameter = 3;
+	m_format_style = 0;
 }

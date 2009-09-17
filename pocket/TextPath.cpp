@@ -4,10 +4,12 @@
 
 #include "stdafx.h"
 #include "TextPath.h"
+#include <cmath>
 
-CTextPath::CTextPath(const _TCHAR* txt_file)
+CTextPath::CTextPath(const _TCHAR* txt_file, int format_style)
 {
 	m_ofs = new ofstream(Ttc(txt_file));
+	m_number_format = format_style;
 }
 
 CTextPath::~CTextPath()
@@ -21,9 +23,53 @@ bool CTextPath::Failed()
 }
 
 static char str_for_num[1024];
-static const char* num(double v)
+
+static const char* num1(double v)
 {
-	sprintf(str_for_num, "%g", v);
+	int i = 0;
+	if(v<0)str_for_num[i] = '-';
+	else str_for_num[i] = '+';
+	i++;
+
+	double value = v;
+	value = fabs(value);
+	if(value > 99999)value = 99999;
+
+	double f = 10000.0;
+	for(int j = 0; j<8; j++)
+	{
+		double temp_v = value / f;
+		if(j == 7)temp_v += 0.5; // round up last one
+		int d = (int)temp_v;
+		sprintf(&str_for_num[i], "%d", d);
+		i++;
+		value -= d*f;
+		f *= 0.1;
+		if(j == 4){
+			str_for_num[i] = '.';
+			i++;
+		}
+	}
+
+	// end string
+	str_for_num[i] = 0;
+
+	return str_for_num;
+}
+
+const char* CTextPath::num(double v)
+{
+	switch(m_number_format)
+	{
+	case 1:
+		num1(v);
+		break;
+
+	default:
+		sprintf(str_for_num, "%g", v);
+		break;
+	}
+
 	return str_for_num;
 }
 
