@@ -11,17 +11,30 @@ I have built a Windows executable, see the downloads page http://code.google.com
 This takes various parameters:
 
 -f input file, defaults to input.dxf
+
 -o output file, defaults to output.txt ( simplified gcode text file )
+
 -r round corner value, default 1.0 ( 1.0 for round corners, 1.5 for square corners )
+
 -m material allowance, default 0.0
+
 -s step over, default half of tool diameter
+
 -c clearance height, default 5
+
 -t start depth ( top of material ), default 0
+
 -i step down, default 1
+
 -z final depth, default -3
+
 -q rapid down to height, default 2
+
 -d tool diameter, default 3
+
 -n from center, default center ( can be "center" or "outside" )
+
+-p output style, 0 is like "3.141529", 1 is like "+00003.141"
 
 == Islands ==
 
