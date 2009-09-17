@@ -17,6 +17,7 @@ public:
 	double m_final_depth;
 	double m_rapid_down_to_height;
 	double m_tool_diameter;
+	int m_format_style;
 
 	PocketParams();
 };
