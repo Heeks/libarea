@@ -3,20 +3,19 @@ Tue, 05 May 2009 15:57:02 +0200.
 
 It was downloaded from <http://code.google.com/p/libarea/>
 
-Upstream Author(s):
+Upstream Author
 
     Dan Heeks
 
 Copyright:
 
-    <Copyright (C) 2009 danheeks@gmail.com >
+    Copyright © 2009 <danheeks@gmail.com>
 
 License:
 
     GPLv3
 
-The Debian packaging is (C) 2009, Joachim Steiger <ubuntu@hyte.de> and
-is licensed under the GPL, see `/usr/share/common-licenses/GPL'.
+The Debian packaging is Copyright © 2009, Joachim Steiger
+<ubuntu@hyte.de> and is licensed under the GPL, see
+`/usr/share/common-licenses/GPL'.
 
-# Please also look if there are files or directories which have a
-# different copyright/license attached and list them here.
