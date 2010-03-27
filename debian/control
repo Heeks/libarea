@@ -3,11 +3,10 @@ Priority: extra
 Maintainer: Joachim Steiger <ubuntu@hyte.de>
 Build-Depends: debhelper (>= 7), python-dev, python-support
 Standards-Version: 3.7.3
-Section: libs
+Section: python
 Homepage: http://code.google.com/p/libarea/
 
 Package: python-area
-Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}
 Description: Area C++ class with a Python module
