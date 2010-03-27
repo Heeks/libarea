@@ -1,12 +1,12 @@
 Source: libarea
 Priority: extra
 Maintainer: Joachim Steiger <ubuntu@hyte.de>
-Build-Depends: debhelper (>= 7), python-dev
+Build-Depends: debhelper (>= 7), python-dev, python-support
 Standards-Version: 3.7.3
 Section: libs
 Homepage: http://code.google.com/p/libarea/
 
-Package: libarea0
+Package: python-area
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}
