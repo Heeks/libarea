@@ -1,3 +1,9 @@
+libarea (0.0.2) karmic; urgency=low
+
+  * Fix some minor debian package issues.
+
+ -- Sebastian Kuzminsky <seb@highlab.com>  Thu, 18 Mar 2010 13:10:07 -0600
+
 libarea (0.0.1-svn0) unstable; urgency=low
 
   * Initial release
