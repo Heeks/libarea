@@ -10,7 +10,8 @@ Package: python-area
 Architecture: any
 Depends: ${shlibs:Depends}
 Description: Area C++ class with a Python module
- Derived from the kbool library written by Klaas Holwerda http://boolean.klaasholwerda.nl/bool.html.
+ Derived from the kbool library written by Klaas Holwerda
+ http://boolean.klaasholwerda.nl/bool.html.
  .
  This package contains the shared library.
  .
