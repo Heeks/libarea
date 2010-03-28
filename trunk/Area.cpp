@@ -130,7 +130,6 @@ void CCurve::FitArcs()
 	{
 		m_vertices.clear();
 		m_vertices.reserve(new_vertices.size() + might_be_an_arc.size());
-		int i = 0;
 		for(std::list<CVertex>::iterator It = new_vertices.begin(); It != new_vertices.end(); It++)m_vertices.push_back(*It);
 		for(std::list<const CVertex*>::iterator It = might_be_an_arc.begin(); It != might_be_an_arc.end(); It++)m_vertices.push_back(*(*It));
 	}

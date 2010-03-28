@@ -42,7 +42,7 @@ B_INT babs(B_INT a)
 //----------------- Bool_Engine_Error -------------------------------/
 //-------------------------------------------------------------------/
 
-Bool_Engine_Error::Bool_Engine_Error(char* message, char* header, int degree, int fatal)
+Bool_Engine_Error::Bool_Engine_Error(const char* message, const char* header, int degree, int fatal)
 {
 	_message = new char[LINELENGTH];
 	_header  = new char[LINELENGTH];
@@ -177,19 +177,19 @@ void Bool_Engine::SetLog( bool OnOff )
 	}
 }
 
-void Bool_Engine::SetState( char* process )
+void Bool_Engine::SetState( const char* process )
 {
    Write_Log(process);
 }
 
-void Bool_Engine::error(char *text, char *title)
+void Bool_Engine::error(const char *text, const char *title)
 {
    Write_Log("FATAL ERROR: ", title);
    Write_Log("FATAL ERROR: ", text);
    throw Bool_Engine_Error(" Fatal Error", "Fatal Error", 9, 1);
 };
 
-void Bool_Engine::info(char *text, char *title)
+void Bool_Engine::info(const char *text, const char *title)
 {
    Write_Log("FATAL ERROR: ", title);
    Write_Log("FATAL ERROR: ", text);
@@ -580,7 +580,7 @@ int Bool_Engine::GetPolygonPointUserData()
 }
 
 
-void Bool_Engine::Write_Log(char *msg1)
+void Bool_Engine::Write_Log(const char *msg1)
 {
    if (m_logfile == NULL)
        return;
@@ -588,7 +588,7 @@ void Bool_Engine::Write_Log(char *msg1)
    fprintf(m_logfile,"%s \n",msg1);
 }
 
-void Bool_Engine::Write_Log(char *msg1, char*msg2)
+void Bool_Engine::Write_Log(const char *msg1, const char*msg2)
 {
    if (m_logfile == NULL)
        return;
@@ -596,7 +596,7 @@ void Bool_Engine::Write_Log(char *msg1, char*msg2)
    fprintf(m_logfile,"%s %s\n",msg1, msg2);
 }
 
-void Bool_Engine::Write_Log(char *fmt, double dval)
+void Bool_Engine::Write_Log(const char *fmt, double dval)
 {
    if (m_logfile == NULL)
        return;
@@ -604,7 +604,7 @@ void Bool_Engine::Write_Log(char *fmt, double dval)
    fprintf(m_logfile,fmt,dval);
 }
 
-void Bool_Engine::Write_Log(char *fmt, B_INT bval)
+void Bool_Engine::Write_Log(const char *fmt, B_INT bval)
 {
    if (m_logfile == NULL)
        return;

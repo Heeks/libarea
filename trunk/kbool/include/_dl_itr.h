@@ -103,7 +103,7 @@ template <class Dtype> class DL_List
          ~DL_List();
 
 		   //!Report off List Errors
-   		void Error(char* function,Lerror a_error);
+   		void Error(const char* function,Lerror a_error);
 
 		   //!Number of items in the list
          int  count();
@@ -168,7 +168,7 @@ class DL_Iter
 		~DL_Iter();
 
 	   //!Report off Iterator Errors
-		void 	  Error(char* function,Lerror a_error);
+		void 	  Error(const char* function,Lerror a_error);
 
       //!This attaches an iterator to a list of a given type.
 		void    Attach(DL_List<Dtype>* newlist);
