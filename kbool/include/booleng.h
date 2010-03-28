@@ -121,7 +121,7 @@ B_INT bmax(B_INT value1, B_INT value2);
 class A2DKBOOLDLLEXP Bool_Engine_Error
 {
 	public:
-		Bool_Engine_Error(char* message, char* header=0, int degree = 9, int fatal = 0);
+		Bool_Engine_Error(const char* message, const char* header=0, int degree = 9, int fatal = 0);
 		Bool_Engine_Error(const Bool_Engine_Error& a);
 		~Bool_Engine_Error();
 		char*	GetErrorMessage();
@@ -191,16 +191,16 @@ class A2DKBOOLDLLEXP Bool_Engine {
    //! destructor   
    virtual ~Bool_Engine();
 
-   char* GetVersion() { return KBOOL_VERSION; }
+   const char* GetVersion() { return KBOOL_VERSION; }
 
 	//! reports progress of algorithm.
-   virtual void SetState( char* = 0 );
+   virtual void SetState( const char* = 0 );
 
 	//! called at an internal error.
-	virtual void error(char *text, char *title);
+	virtual void error(const char *text, const char *title);
 
 	//! called at an internal generated possible error.
-   virtual void info(char *text, char *title);
+   virtual void info(const char *text, const char *title);
 
    bool Do_Operation(BOOL_OP operation);
 
@@ -379,13 +379,13 @@ class A2DKBOOLDLLEXP Bool_Engine {
    void SetLog( bool OnOff ); 
 
    //! used to write to log file
-   void Write_Log(char *);
+   void Write_Log(const char *);
    //! used to write to log file
-   void Write_Log(char *, char *);
+   void Write_Log(const char *, const char *);
    //! used to write to log file
-   void Write_Log(char *, double);
+   void Write_Log(const char *, double);
    //! used to write to log file
-   void Write_Log(char *, B_INT);
+   void Write_Log(const char *, B_INT);
 
    FILE* GetLogFile() { return m_logfile; }
 

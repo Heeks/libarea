@@ -121,7 +121,7 @@ Error("remove_all",ITER_GT_O);
 \param error code to generate a message for
 */
 template <class Dtype>
-void DL_List<Dtype>::Error(char* function,Lerror a_error)
+void DL_List<Dtype>::Error(const char* function,Lerror a_error)
 {
    char buf[100];
    strcpy(buf,"DL_List<Dtype>::");
@@ -537,7 +537,7 @@ void DL_List<Dtype>::takeover(DL_List<Dtype>* otherlist)
  \param a_error:  error code to generate a message for
 */
 template <class Dtype>
-void DL_Iter<Dtype>::Error(char* function,Lerror a_error)
+void DL_Iter<Dtype>::Error(const char* function,Lerror a_error)
 {
    char buf[100];
    strcpy(buf,"DL_Iter<Dtype>::");
