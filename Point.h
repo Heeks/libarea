@@ -18,3 +18,5 @@ public:
 	const Point operator/(double d)const{return Point(x / d, y / d);}
 	double dist(const Point &p)const{double dx = p.x - x; double dy = p.y - y; return sqrt(dx*dx + dy*dy);}
 };
+
+const Point operator*(const double &d, const Point &p);

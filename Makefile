@@ -5,7 +5,7 @@ HOME	= .
 CXX     = g++
 CC      = gcc
 LD      = g++
-LDFLAGS = -shared -rdynamic `python-config --ldflags`
+LDFLAGS = -shared -rdynamic `python-config --ldflags` -lboost_python-mt
 LIBS    = -lstdc++ `python-config --libs`
 CFLAGS  = -Wall -I/usr/include `python-config --includes` -I./ -I./kbool/include -g -fPIC
 

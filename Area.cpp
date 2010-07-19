@@ -8,13 +8,15 @@
 #include "Circle.h"
 #include "Arc.h"
 
-CVertex::CVertex(int type, double x, double y, double cx, double cy, int user_data):m_type(type)
+const Point operator*(const double &d, const Point &p){ return p * d;}
+
+CVertex::CVertex(int type, const Point& p, const Point& c, int user_data):m_type(type), m_p(p), m_c(c), m_user_data(user_data)
 {
-	m_p[0] = x;
-	m_p[1] = y;
-	m_c[0] = cx;
-	m_c[1] = cy;
-	m_user_data = user_data;
+}
+
+void CCurve::append(const CVertex& vertex)
+{
+	m_vertices.push_back(vertex);
 }
 
 bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& might_be_an_arc, Arc &arc)
@@ -39,9 +41,9 @@ bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& migh
 	}
 
 	// create a circle to test
-	Point p0(prev_vt.m_p[0], prev_vt.m_p[1]);
-	Point p1(mid_vt->m_p[0], mid_vt->m_p[1]);
-	Point p2(might_be_an_arc.back()->m_p[0], might_be_an_arc.back()->m_p[1]);
+	Point p0(prev_vt.m_p);
+	Point p1(mid_vt->m_p);
+	Point p2(might_be_an_arc.back()->m_p);
 	Circle c(p0, p1, p2);
 
 	const CVertex* current_vt = &prev_vt;
@@ -60,7 +62,9 @@ bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& migh
 	arc.SetDirWithPoint(might_be_an_arc.front()->m_p);
 	arc.m_user_data = might_be_an_arc.back()->m_user_data;
 
-	return arc.IncludedAngle() < 3.15; // We don't want full arcs, so limit to about 180 degrees
+	if(arc.IncludedAngle() >= 3.15)return false; // We don't want full arcs, so limit to about 180 degrees
+
+	return true;
 }
 
 void CCurve::AddArcOrLines(bool check_for_arc, std::list<CVertex> &new_vertices, std::list<const CVertex*>& might_be_an_arc, Arc &arc, bool &arc_found, bool &arc_added)
@@ -73,7 +77,7 @@ void CCurve::AddArcOrLines(bool check_for_arc, std::list<CVertex> &new_vertices,
 	{
 		if(arc_found)
 		{
-			new_vertices.push_back(CVertex(arc.m_dir ? 1:-1, arc.m_e.x, arc.m_e.y, arc.m_c.x, arc.m_c.y, arc.m_user_data));
+			new_vertices.push_back(CVertex(arc.m_dir ? 1:-1, arc.m_e, arc.m_c, arc.m_user_data));
 			arc_added = true;
 			arc_found = false;
 			const CVertex* back_vt = might_be_an_arc.back();
@@ -104,10 +108,10 @@ void CCurve::FitArcs()
 	bool arc_found = false;
 	bool arc_added = false;
 
-	int num = m_vertices.size();
-	for(int i = 0; i<num; i++)
+	int i = 0;
+	for(std::list<CVertex>::iterator It = m_vertices.begin(); It != m_vertices.end(); It++, i++)
 	{
-		CVertex& vt = m_vertices[i];
+		CVertex& vt = *It;
 		if(vt.m_type || i == 0)
 			new_vertices.push_back(vt);
 		else
@@ -129,7 +133,6 @@ void CCurve::FitArcs()
 	if(arc_added)
 	{
 		m_vertices.clear();
-		m_vertices.reserve(new_vertices.size() + might_be_an_arc.size());
 		for(std::list<CVertex>::iterator It = new_vertices.begin(); It != new_vertices.end(); It++)m_vertices.push_back(*It);
 		for(std::list<const CVertex*>::iterator It = might_be_an_arc.begin(); It != might_be_an_arc.end(); It++)m_vertices.push_back(*(*It));
 	}
@@ -172,6 +175,11 @@ void CArea::ArmBoolEng( Bool_Engine* booleng )
     booleng->SetRoundfactor( ROUNDFACTOR );
 }
 
+void CArea::append(const CCurve& curve)
+{
+	m_curves.push_back(curve);
+}
+
 void CArea::Subtract(const CArea& a2)
 {
 	Bool_Engine* booleng = new Bool_Engine();
@@ -197,7 +205,7 @@ void CArea::AddVertex(Bool_Engine* booleng, CVertex& vertex, CVertex* prev_verte
 {
 	if(vertex.m_type == 0 || prev_vertex == NULL)
 	{
-		booleng->AddPoint(vertex.m_p[0], vertex.m_p[1], vertex.m_user_data);
+		booleng->AddPoint(vertex.m_p.x, vertex.m_p.y, vertex.m_user_data);
 	}
 	else
 	{
@@ -206,13 +214,13 @@ void CArea::AddVertex(Bool_Engine* booleng, CVertex& vertex, CVertex* prev_verte
 		int i;
 		double ang1,ang2,phit;
 
-		dx = prev_vertex->m_p[0] - vertex.m_c[0];
-		dy = prev_vertex->m_p[1] - vertex.m_c[1];
+		dx = prev_vertex->m_p.x - vertex.m_c.x;
+		dy = prev_vertex->m_p.y - vertex.m_c.y;
 
 		ang1=atan2(dy,dx);
 		if (ang1<0) ang1+=2.0*M_PI;
-		dx = vertex.m_p[0] - vertex.m_c[0];
-		dy = vertex.m_p[1] - vertex.m_c[1];
+		dx = vertex.m_p.x - vertex.m_c.x;
+		dy = vertex.m_p.y - vertex.m_c.y;
 		ang2=atan2(dy,dx);
 		if (ang2<0) ang2+=2.0*M_PI;
 
@@ -248,17 +256,17 @@ void CArea::AddVertex(Bool_Engine* booleng, CVertex& vertex, CVertex* prev_verte
 
 		dphi=phit/(Segments);
 
-		double px = prev_vertex->m_p[0];
-		double py = prev_vertex->m_p[1];
+		double px = prev_vertex->m_p.x;
+		double py = prev_vertex->m_p.y;
 
 		for (i=1; i<=Segments; i++)
 		{
-			dx = px - vertex.m_c[0];
-			dy = py - vertex.m_c[1];
+			dx = px - vertex.m_c.x;
+			dy = py - vertex.m_c.y;
 			phi=atan2(dy,dx);
 
-			double nx = vertex.m_c[0] + radius * cos(phi-dphi);
-			double ny = vertex.m_c[1] + radius * sin(phi-dphi);
+			double nx = vertex.m_c.x + radius * cos(phi-dphi);
+			double ny = vertex.m_c.y + radius * sin(phi-dphi);
 
 			booleng->AddPoint(nx, ny, vertex.m_user_data);
 
@@ -276,11 +284,11 @@ void CArea::MakeGroup( Bool_Engine* booleng, bool a_not_b )
 		bool first_curve = true;
 		CVertex* last_vertex = NULL;
 
-	for(std::vector<CCurve>::iterator It = m_curves.begin(); It != m_curves.end(); It++)
+	for(std::list<CCurve>::iterator It = m_curves.begin(); It != m_curves.end(); It++)
 	{
 		CCurve& curve = *It;
 		CVertex* prev_vertex = NULL;
-		for(std::vector<CVertex>::iterator It2 = curve.m_vertices.begin(); It2 != curve.m_vertices.end(); It2++)
+		for(std::list<CVertex>::iterator It2 = curve.m_vertices.begin(); It2 != curve.m_vertices.end(); It2++)
 		{
 			CVertex& vertex = *It2;
 			AddVertex(booleng, vertex, prev_vertex);
@@ -290,7 +298,7 @@ void CArea::MakeGroup( Bool_Engine* booleng, bool a_not_b )
 
 				if(!first_curve)
 				{
-				booleng->AddPoint(last_vertex->m_p[0], last_vertex->m_p[1], 0);
+				booleng->AddPoint(last_vertex->m_p.x, last_vertex->m_p.y, 0);
 			}
 
 				first_curve = false;
@@ -313,7 +321,7 @@ void CArea::SetFromResult( Bool_Engine* booleng )
         // foreach point in the polygon
         while ( booleng->PolygonHasMorePoints() )
         {
-			CVertex vertex(0, booleng->GetPolygonXPoint(), booleng->GetPolygonYPoint(), 0.0, 0.0, booleng->GetPolygonPointUserData());
+			CVertex vertex(0, Point(booleng->GetPolygonXPoint(), booleng->GetPolygonYPoint()), Point(0.0, 0.0), booleng->GetPolygonPointUserData());
 
 			curve.m_vertices.push_back(vertex);
         }
@@ -325,7 +333,7 @@ void CArea::SetFromResult( Bool_Engine* booleng )
 }
 
 void CArea::FitArcs(){
-	for(std::vector<CCurve>::iterator It = m_curves.begin(); It != m_curves.end(); It++)
+	for(std::list<CCurve>::iterator It = m_curves.begin(); It != m_curves.end(); It++)
 	{
 		CCurve& curve = *It;
 		curve.FitArcs();

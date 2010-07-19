@@ -8,6 +8,7 @@
 #include <vector>
 #include <list>
 #include <math.h>
+#include "Point.h"
 class Bool_Engine;
 class Arc;
 
@@ -15,11 +16,12 @@ class CVertex
 {
 public:
 	int m_type; // 0 - line ( or start point ), 1 - anti-clockwise arc, -1 - clockwise arc
-	double m_p[2]; // end point
-	double m_c[2]; // centre point in absolute coordinates
+	Point m_p; // end point
+	Point m_c; // centre point in absolute coordinates
 	int m_user_data;
 
-	CVertex(int type, double x, double y, double cx, double cy, int user_data = 0);
+	CVertex():m_type(0), m_p(Point(0, 0)), m_c(Point(0,0)), m_user_data(0){}
+	CVertex(int type, const Point& p, const Point& c, int user_data = 0);
 };
 
 class CCurve
@@ -31,7 +33,8 @@ protected:
 	void AddArcOrLines(bool check_for_arc, std::list<CVertex> &new_vertices, std::list<const CVertex*>& might_be_an_arc, Arc &arc, bool &arc_found, bool &arc_added);
 
 public:
-	std::vector<CVertex> m_vertices;
+	std::list<CVertex> m_vertices;
+	void append(const CVertex& vertex);
 
 	void FitArcs();
 };
@@ -43,16 +46,18 @@ class CArea
 	void AddVertex(Bool_Engine* booleng, CVertex& vertex, CVertex* prev_vertex = NULL);
 
 public:
-	std::vector<CCurve> m_curves;
+	std::list<CCurve> m_curves;
 	static double m_round_corners_factor; // 1.0 for round 90 degree corners, 1.5 for square 90 degree corners
 	static double m_accuracy;
 	static double m_units; // 1.0 for mm, 25.4 for inches. All points are multiplied by this before going to the engine
 
 	static void ArmBoolEng( Bool_Engine* booleng );
 
+	void append(const CCurve& curve);
 	void Subtract(const CArea& a2);
 	void Offset(double inwards_value);
 	void FitArcs();
+	unsigned int num_curves(){return m_curves.size();}
 };
 
 #endif // #define AREA_HEADER
