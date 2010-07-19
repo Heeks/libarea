@@ -4,9 +4,8 @@
 
 #include "PythonStuff.h"
 
-#include <set>
-
 #include "Area.h"
+#include "Point.h"
 
 #if _DEBUG
 #undef _DEBUG
@@ -16,342 +15,111 @@
 #include <Python.h>
 #endif
 
-
 #ifdef __GNUG__
 #pragma implementation
 #endif
 
-#include "kbool/include/_lnk_itr.h"
+#include <boost/progress.hpp>
+#include <boost/timer.hpp>
+#include <boost/foreach.hpp>
+#include <boost/python.hpp>
+#include <boost/python/module.hpp>
+#include <boost/python/class.hpp>
+#include <boost/python/wrapper.hpp>
+#include <boost/python/call.hpp>
 
-#include "kbool/include/booleng.h"
+namespace bp = boost::python;
 
-std::set<CArea*> valid_areas;
-
-static PyObject* area_new(PyObject* self, PyObject* args)
-{
-	CArea* new_object = new CArea();
-	valid_areas.insert(new_object);
-
-	// return new object cast to an int
-	PyObject *pValue = PyInt_FromLong((long)new_object);
-	Py_INCREF(pValue);
-	return pValue;
+boost::python::list getVertices(const CCurve& curve) {
+	boost::python::list vlist;
+	BOOST_FOREACH(const CVertex& vertex, curve.m_vertices) {
+		vlist.append(vertex);
+    }
+	return vlist;
 }
 
-static PyObject* area_exists(PyObject* self, PyObject* args)
-{
-	int ik;
-	if (!PyArg_ParseTuple(args, "i", &ik)) return NULL;
-
-	CArea* k = (CArea*)ik;
-	bool exists = (valid_areas.find(k) != valid_areas.end());
-
-	// return exists
-	PyObject *pValue = exists ? Py_True : Py_False;
-	Py_INCREF(pValue);
-	return pValue;
-}
-
-static PyObject* area_delete(PyObject* self, PyObject* args)
-{
-	int ik;
-	if (!PyArg_ParseTuple(args, "i", &ik)) return NULL;
-
-	CArea* k = (CArea*)ik;
-	if(valid_areas.find(k) != valid_areas.end())
-	{
-		delete k;
-		valid_areas.erase(k);
-	}
-
-	Py_RETURN_NONE;
-}
-
-static int span_number = 1;
-
-static PyObject* area_add_point(PyObject* self, PyObject* args)
-{
-	double x, y, i, j;
-	int sp, ik;
-	if (!PyArg_ParseTuple(args, "iidddd", &ik, &sp, &x, &y, &i, &j)) return NULL;
-
-	CArea* k = (CArea*)ik;
-	if(valid_areas.find(k) != valid_areas.end())
-	{
-		// add a curve if there isn't one
-		if(k->m_curves.size() == 0)k->m_curves.push_back(CCurve());
-		int curve_index = k->m_curves.size() - 1;
-
-		// can't add arc as first span
-		if(sp && k->m_curves[curve_index].m_vertices.size() == 0){ const char* str = "can't add arc to area as first point"; printf("%s", str); throw(str);}
-
-		// add the vertex
-		k->m_curves[curve_index].m_vertices.push_back(CVertex(sp, x * CArea::m_units, y * CArea::m_units, i * CArea::m_units, j * CArea::m_units, span_number));
-		span_number++;
-	}
-
-	Py_RETURN_NONE;
-}
-
-static PyObject* area_start_new_curve(PyObject* self, PyObject* args)
-{
-	int ik;
-	if (!PyArg_ParseTuple(args, "i", &ik)) return NULL;
-
-	CArea* k = (CArea*)ik;
-	if(valid_areas.find(k) != valid_areas.end())
-	{
-		// add a new curve
-		k->m_curves.push_back(CCurve());
-	}
-
-	Py_RETURN_NONE;
-}
-
-static PyObject* area_offset(PyObject* self, PyObject* args)
-{
-	int ik;
-	double inwards;
-	if (!PyArg_ParseTuple(args, "id", &ik, &inwards)) return NULL;
-
-	CArea* k = (CArea*)ik;
-	//int ret = 0;
-
-	if(valid_areas.find(k) != valid_areas.end())
-	{
-		k->Offset(inwards * CArea::m_units);
-	}
-
-	Py_RETURN_NONE;
-}
-
-static PyObject* area_subtract(PyObject* self, PyObject* args)
-{
-	int a1, a2;
-	if (!PyArg_ParseTuple(args, "ii", &a1, &a2)) return NULL;
-
-	CArea* area1 = (CArea*)a1;
-	CArea* area2 = (CArea*)a2;
-
-	if(valid_areas.find(area1) != valid_areas.end() && valid_areas.find(area2) != valid_areas.end())
-	{
-		area1->Subtract(*area2);
-	}
-
-	Py_RETURN_NONE;
-}
-
-static PyObject* area_set_round_corner_factor(PyObject* self, PyObject* args)
-{
-	if (!PyArg_ParseTuple(args, "d", &CArea::m_round_corners_factor)) return NULL;
-
-	Py_RETURN_NONE;
-}
-
-static PyObject* area_copy(PyObject* self, PyObject* args)
-{
-	int ik;
-	int ik2;
-	if (!PyArg_ParseTuple(args, "ii", &ik, &ik2)) return NULL;
-	CArea* k = (CArea*)ik;
-	CArea* k2 = (CArea*)ik2;
-	if(valid_areas.find(k) != valid_areas.end())
-	{
-		if(valid_areas.find(k2) != valid_areas.end())
-		{
-			*k2 = *k;
-		}
-	}
-
-	Py_RETURN_NONE;
-}
-
-static PyObject* area_num_curves(PyObject* self, PyObject* args)
-{
-	int ik;
-	if (!PyArg_ParseTuple(args, "i", &ik)) return NULL;
-	CArea* k = (CArea*)ik;
-
-	int n = 0;
-	if(valid_areas.find(k) != valid_areas.end())
-	{
-		n = k->m_curves.size();
-	}
-
-	PyObject *pValue = PyInt_FromLong(n);
-	Py_INCREF(pValue);
-	return pValue;
-}
-
-static PyObject* area_num_vertices(PyObject* self, PyObject* args)
-{
-	int ik, ic;
-	if (!PyArg_ParseTuple(args, "ii", &ik, &ic)) return NULL;
-	CArea* k = (CArea*)ik;
-
-	int n = 0;
-	if(valid_areas.find(k) != valid_areas.end())
-	{
-		if(ic >= 0 && ic < (int)(k->m_curves.size()))n = k->m_curves[ic].m_vertices.size();
-	}
-
-	PyObject *pValue = PyInt_FromLong(n);
-	Py_INCREF(pValue);
-	return pValue;
-}
-
-static PyObject* area_get_vertex(PyObject* self, PyObject* args)
-{
-	int ik, ic;
-	int index; // 0 is first
-	if (!PyArg_ParseTuple(args, "iii", &ik, &ic, &index)) return NULL;
-	CArea* k = (CArea*)ik;
-
-	int sp = 0;
-	double x = 0.0, y = 0.0;
-	double cx = 0.0, cy = 0.0;
-
-	if(valid_areas.find(k) != valid_areas.end())
-	{
-		if(ic >= 0 && ic < (int)(k->m_curves.size()))
-		{
-			CCurve& curve = k->m_curves[ic];
-			if(index >= 0 && index < (int)(curve.m_vertices.size()))
-			{
-				CVertex& vertex = curve.m_vertices[index];
-				sp = vertex.m_type;
-				x = vertex.m_p[0] / CArea::m_units;
-				y = vertex.m_p[1] / CArea::m_units;
-				cx = vertex.m_c[0] / CArea::m_units;
-				cy = vertex.m_c[1] / CArea::m_units;
-			}
-		}
-	}
-
-	// return span data as a tuple
-	PyObject *pTuple = PyTuple_New(5);
-	{
-		PyObject *pValue = PyInt_FromLong(sp);
-		if (!pValue){
-			Py_DECREF(pTuple);return NULL;
-		}
-		PyTuple_SetItem(pTuple, 0, pValue);
-	}
-	{
-		PyObject *pValue = PyFloat_FromDouble(x);
-		if (!pValue){
-			Py_DECREF(pTuple);return NULL;
-		}
-		PyTuple_SetItem(pTuple, 1, pValue);
-	}
-	{
-		PyObject *pValue = PyFloat_FromDouble(y);
-		if (!pValue){
-			Py_DECREF(pTuple);return NULL;
-		}
-		PyTuple_SetItem(pTuple, 2, pValue);
-	}
-	{
-		PyObject *pValue = PyFloat_FromDouble(cx);
-		if (!pValue){
-			Py_DECREF(pTuple);return NULL;
-		}
-		PyTuple_SetItem(pTuple, 3, pValue);
-	}
-	{
-		PyObject *pValue = PyFloat_FromDouble(cy);
-		if (!pValue){
-			Py_DECREF(pTuple);return NULL;
-		}
-		PyTuple_SetItem(pTuple, 4, pValue);
-	}
-
-	Py_INCREF(pTuple);
-	return pTuple;
-}
-
-static PyObject* area_add_curve(PyObject* self, PyObject* args)
-{
-	int ik, ij, ii;
-	if (!PyArg_ParseTuple(args, "iii", &ik, &ij, &ii)) return NULL;
-
-	CArea* k = (CArea*)ik;
-	CArea* j = (CArea*)ij;
-	if(valid_areas.find(k) != valid_areas.end() && valid_areas.find(j) != valid_areas.end())
-	{
-        if(ii >= 0 && ii < (int)j->m_curves.size()){
-            // add curve
-            k->m_curves.push_back(j->m_curves[ii]);
-        }
-	}
-
-	Py_RETURN_NONE;
+boost::python::list getCurves(const CArea& area) {
+	boost::python::list clist;
+	BOOST_FOREACH(const CCurve& curve, area.m_curves) {
+		clist.append(curve);
+    }
+	return clist;
 }
 
 static void print_curve(const CCurve& c)
 {
 	unsigned int nvertices = c.m_vertices.size();
 	printf("number of vertices = %d\n", nvertices);
-	for(unsigned int i = 0; i< nvertices; i++)
+	int i = 0;
+	for(std::list<CVertex>::const_iterator It = c.m_vertices.begin(); It != c.m_vertices.end(); It++, i++)
 	{
-		const CVertex &vertex = c.m_vertices[i];
-		printf("vertex %d type = %d, x = %g, y = %g", i+1, vertex.m_type, vertex.m_p[0] / CArea::m_units, vertex.m_p[1] / CArea::m_units);
-		if(vertex.m_type)printf(", xc = %g, yc = %g", vertex.m_c[0] / CArea::m_units, vertex.m_c[1] / CArea::m_units);
+		const CVertex& vertex = *It;
+		printf("vertex %d type = %d, x = %g, y = %g", i+1, vertex.m_type, vertex.m_p.x / CArea::m_units, vertex.m_p.y / CArea::m_units);
+		if(vertex.m_type)printf(", xc = %g, yc = %g", vertex.m_c.x / CArea::m_units, vertex.m_c.y / CArea::m_units);
 		printf("\n");
 	}
 }
 
 static void print_area(const CArea &a)
 {
-	for(unsigned int i = 0; i<a.m_curves.size(); i++)
+	for(std::list<CCurve>::const_iterator It = a.m_curves.begin(); It != a.m_curves.end(); It++)
 	{
-		const CCurve& curve = a.m_curves[i];
+		const CCurve& curve = *It;
 		print_curve(curve);
 	}
 }
 
-static PyObject* area_print_area(PyObject* self, PyObject* args)
+static void set_round_corner_factor(double factor)
 {
-	int ik;
-	if (!PyArg_ParseTuple(args, "i", &ik)) return NULL;
-	CArea* k = (CArea*)ik;
-
-	if(valid_areas.find(k) != valid_areas.end())
-	{
-		print_area(*k);
-	}
-
-	Py_RETURN_NONE;
+	CArea::m_round_corners_factor = factor;
 }
 
-static PyObject* area_set_units(PyObject* self, PyObject* args)
+static void set_units(double units)
 {
-	if (!PyArg_ParseTuple(args, "d", &CArea::m_units)) return NULL;
-
-	Py_RETURN_NONE;
+	CArea::m_units = units;
 }
 
-static PyMethodDef AreaMethods[] = {
-	{"new", area_new, METH_VARARGS , ""},
-	{"exists", area_exists, METH_VARARGS , ""},
-	{"delete", area_delete, METH_VARARGS , ""},
-	{"add_point", area_add_point, METH_VARARGS , ""},
-	{"start_new_curve", area_start_new_curve, METH_VARARGS , ""},
-	{"subtract", area_subtract, METH_VARARGS , ""},
-	{"offset", area_offset, METH_VARARGS , ""},
-	{"set_round_corner_factor", area_set_round_corner_factor, METH_VARARGS , ""},
-	{"copy", area_copy, METH_VARARGS , ""},
-	{"num_curves", area_num_curves, METH_VARARGS , ""},
-	{"num_vertices", area_num_vertices, METH_VARARGS , ""},
-	{"get_vertex", area_get_vertex, METH_VARARGS , ""},
-	{"add_curve", area_add_curve, METH_VARARGS , ""},
-	{"print_area", area_print_area, METH_VARARGS , ""},
-	{"set_units", area_set_units, METH_VARARGS , ""},
-	{NULL, NULL, 0, NULL}
-};
+BOOST_PYTHON_MODULE(area) {
+	bp::class_<Point>("Point") 
+        .def(bp::init<double, double>())
+        .def(bp::init<Point>())
+        .def(bp::other<double>() * bp::self)
+        .def(bp::self * bp::other<double>())
+        .def(bp::self - bp::other<Point>())
+        .def(bp::self + bp::other<Point>())
+        .def("dist", &Point::dist)
+        .def_readwrite("x", &Point::x)
+        .def_readwrite("y", &Point::y)
+    ;
 
-PyMODINIT_FUNC
-initarea(void)
-{
-	Py_InitModule("area", AreaMethods);
+	bp::class_<CVertex>("Vertex") 
+        .def(bp::init<CVertex>())
+        .def(bp::init<int, Point, Point>())
+        .def(bp::init<int, Point, Point, int>())
+        .def_readwrite("type", &CVertex::m_type)
+        .def_readwrite("p", &CVertex::m_p)
+        .def_readwrite("c", &CVertex::m_c)
+        .def_readwrite("user_data", &CVertex::m_user_data)
+    ;
+
+	bp::class_<CCurve>("Curve") 
+        .def(bp::init<CCurve>())
+        .def("getVertices", &getVertices)
+        .def("append",&CCurve::append)
+        .def("print", &print_curve)
+    ;
+
+	bp::class_<CArea>("Area") 
+        .def(bp::init<CArea>())
+        .def("getCurves", &getCurves)
+        .def("append",&CArea::append)
+        .def("Subtract",&CArea::Subtract)
+        .def("Offset",&CArea::Offset)
+        .def("FitArcs",&CArea::FitArcs)
+        .def("print", &print_area)
+		.def("num_curves", &CArea::num_curves)
+    ;
+
+    bp::def("set_round_corner_factor", set_round_corner_factor);
+    bp::def("set_units", set_units);
 }
