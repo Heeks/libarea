@@ -85,9 +85,13 @@ BOOST_PYTHON_MODULE(area) {
         .def(bp::init<Point>())
         .def(bp::other<double>() * bp::self)
         .def(bp::self * bp::other<double>())
+        .def(bp::self * bp::other<Point>())
         .def(bp::self - bp::other<Point>())
         .def(bp::self + bp::other<Point>())
         .def("dist", &Point::dist)
+        .def("dist", &Point::dist)
+        .def("length", &Point::length)
+        .def("normalize", &Point::normalize)
         .def_readwrite("x", &Point::x)
         .def_readwrite("y", &Point::y)
     ;
@@ -107,6 +111,7 @@ BOOST_PYTHON_MODULE(area) {
         .def("getVertices", &getVertices)
         .def("append",&CCurve::append)
         .def("print", &print_curve)
+		.def("NearestPoint", &CCurve::NearestPoint)
     ;
 
 	bp::class_<CArea>("Area") 
@@ -118,6 +123,7 @@ BOOST_PYTHON_MODULE(area) {
         .def("FitArcs",&CArea::FitArcs)
         .def("print", &print_area)
 		.def("num_curves", &CArea::num_curves)
+		.def("NearestPoint", &CArea::NearestPoint)
     ;
 
     bp::def("set_round_corner_factor", set_round_corner_factor);
