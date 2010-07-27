@@ -9,6 +9,19 @@
 #include "Arc.h"
 
 const Point operator*(const double &d, const Point &p){ return p * d;}
+double Point::tolerance = 0.001;
+
+double Point::length()const
+{
+    return sqrt( x*x + y*y );
+}
+
+void Point::normalize()
+{
+	double len = length();
+	if(fabs(len)> 0.000000000000001)
+		*this = (*this) / len;
+}
 
 CVertex::CVertex(int type, const Point& p, const Point& c, int user_data):m_type(type), m_p(p), m_c(c), m_user_data(user_data)
 {
@@ -47,11 +60,12 @@ bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& migh
 	Circle c(p0, p1, p2);
 
 	const CVertex* current_vt = &prev_vt;
+	double accuracy = CArea::m_accuracy * 1.4 / CArea::m_units;
 	for(std::list<const CVertex*>::iterator It = might_be_an_arc.begin(); It != might_be_an_arc.end(); It++)
 	{
 		const CVertex* vt = *It;
 
-		if(!c.LineIsOn(current_vt->m_p, vt->m_p, CArea::m_accuracy * 1.4))
+		if(!c.LineIsOn(current_vt->m_p, vt->m_p, accuracy))
 			return false;
 		current_vt = vt;
 	}
@@ -138,6 +152,54 @@ void CCurve::FitArcs()
 	}
 }
 
+Point CCurve::NearestPoint(const Point& p)
+{
+	double best_dist = 0.0;
+	Point best_point = Point(0, 0);
+	bool best_point_valid = false;
+	Point prev_p = Point(0, 0);
+	bool prev_p_valid = false;
+	for(std::list<CVertex>::iterator It = m_vertices.begin(); It != m_vertices.end(); It++)
+	{
+		CVertex& vertex = *It;
+		if(prev_p_valid)
+		{
+			Point near_point = SpanPtr(prev_p, vertex).NearestPoint(p);
+			double dist = near_point.dist(p);
+			if(!best_point_valid || dist < best_dist)
+			{
+				best_dist = dist;
+				best_point = near_point;
+				best_point_valid = true;
+			}
+		}
+		prev_p = vertex.m_p;
+		prev_p_valid = true;
+	}
+	return best_point;
+}
+
+Point SpanPtr::NearestPoint(const Point& p)
+{
+	if(m_v.m_type == 0)
+	{
+		Point Vs = (m_v.m_p - m_p);
+		Vs.normalize();
+		double dp = (p - m_p) * Vs;		
+		return (Vs * dp) + m_p;
+	}
+	else
+	{
+		double radius = m_p.dist(m_v.m_c);
+		double r = p.dist(m_v.m_c);
+		if(r < Point::tolerance)return m_p;
+		Point vc = (m_v.m_c - p);
+		vc.normalize();
+		Point pn = m_p + vc * ((r - radius) / r);
+		return pn;
+	}
+}
+
 double CArea::m_round_corners_factor = 1.5;
 double CArea::m_accuracy = 0.01;
 double CArea::m_units = 1.0;
@@ -185,8 +247,28 @@ void CArea::Subtract(const CArea& a2)
 	Bool_Engine* booleng = new Bool_Engine();
 	ArmBoolEng( booleng );
 	MakeGroup( booleng, true );
-//	a2.MakeGroup( booleng, false );
-	//booleng->Do_Operation(BOOL_SUBTRACT);
+	a2.MakeGroup( booleng, false );
+	booleng->Do_Operation(BOOL_A_SUB_B);
+	SetFromResult( booleng );
+}
+
+void CArea::Intersect(const CArea& a2)
+{
+	Bool_Engine* booleng = new Bool_Engine();
+	ArmBoolEng( booleng );
+	MakeGroup( booleng, true );
+	a2.MakeGroup( booleng, false );
+	booleng->Do_Operation(BOOL_AND);
+	SetFromResult( booleng );
+}
+
+void CArea::Union(const CArea& a2)
+{
+	Bool_Engine* booleng = new Bool_Engine();
+	ArmBoolEng( booleng );
+	MakeGroup( booleng, true );
+	a2.MakeGroup( booleng, false );
+	booleng->Do_Operation(BOOL_OR);
 	SetFromResult( booleng );
 }
 
@@ -196,16 +278,16 @@ void CArea::Offset(double inwards_value)
 	ArmBoolEng( booleng );
 	MakeGroup( booleng, true);
 	booleng->SetRoundfactor(m_round_corners_factor);
-	booleng->SetCorrectionFactor( -inwards_value );
+	booleng->SetCorrectionFactor( -inwards_value * m_units );
 	booleng->Do_Operation(BOOL_CORRECTION);
 	SetFromResult( booleng );
 }
 
-void CArea::AddVertex(Bool_Engine* booleng, CVertex& vertex, CVertex* prev_vertex)
+void CArea::AddVertex(Bool_Engine* booleng, const CVertex& vertex, const CVertex* prev_vertex)const
 {
 	if(vertex.m_type == 0 || prev_vertex == NULL)
 	{
-		booleng->AddPoint(vertex.m_p.x, vertex.m_p.y, vertex.m_user_data);
+		booleng->AddPoint(vertex.m_p.x * m_units, vertex.m_p.y * m_units, vertex.m_user_data);
 	}
 	else
 	{
@@ -214,13 +296,13 @@ void CArea::AddVertex(Bool_Engine* booleng, CVertex& vertex, CVertex* prev_verte
 		int i;
 		double ang1,ang2,phit;
 
-		dx = prev_vertex->m_p.x - vertex.m_c.x;
-		dy = prev_vertex->m_p.y - vertex.m_c.y;
+		dx = (prev_vertex->m_p.x - vertex.m_c.x) * m_units;
+		dy = (prev_vertex->m_p.y - vertex.m_c.y) * m_units;
 
 		ang1=atan2(dy,dx);
 		if (ang1<0) ang1+=2.0*M_PI;
-		dx = vertex.m_p.x - vertex.m_c.x;
-		dy = vertex.m_p.y - vertex.m_c.y;
+		dx = (vertex.m_p.x - vertex.m_c.x) * m_units;
+		dy = (vertex.m_p.y - vertex.m_c.y) * m_units;
 		ang2=atan2(dy,dx);
 		if (ang2<0) ang2+=2.0*M_PI;
 
@@ -256,17 +338,17 @@ void CArea::AddVertex(Bool_Engine* booleng, CVertex& vertex, CVertex* prev_verte
 
 		dphi=phit/(Segments);
 
-		double px = prev_vertex->m_p.x;
-		double py = prev_vertex->m_p.y;
+		double px = prev_vertex->m_p.x * m_units;
+		double py = prev_vertex->m_p.y * m_units;
 
 		for (i=1; i<=Segments; i++)
 		{
-			dx = px - vertex.m_c.x;
-			dy = py - vertex.m_c.y;
+			dx = px - vertex.m_c.x * m_units;
+			dy = py - vertex.m_c.y * m_units;
 			phi=atan2(dy,dx);
 
-			double nx = vertex.m_c.x + radius * cos(phi-dphi);
-			double ny = vertex.m_c.y + radius * sin(phi-dphi);
+			double nx = vertex.m_c.x * m_units + radius * cos(phi-dphi);
+			double ny = vertex.m_c.y * m_units + radius * sin(phi-dphi);
 
 			booleng->AddPoint(nx, ny, vertex.m_user_data);
 
@@ -276,21 +358,21 @@ void CArea::AddVertex(Bool_Engine* booleng, CVertex& vertex, CVertex* prev_verte
 	}
 }
 
-void CArea::MakeGroup( Bool_Engine* booleng, bool a_not_b )
+void CArea::MakeGroup( Bool_Engine* booleng, bool a_not_b )const
 {
 	booleng->SetLinkHoles(true);
 
 		booleng->StartPolygonAdd(a_not_b ? GROUP_A:GROUP_B);
 		bool first_curve = true;
-		CVertex* last_vertex = NULL;
+		const CVertex* last_vertex = NULL;
 
-	for(std::list<CCurve>::iterator It = m_curves.begin(); It != m_curves.end(); It++)
+	for(std::list<CCurve>::const_iterator It = m_curves.begin(); It != m_curves.end(); It++)
 	{
-		CCurve& curve = *It;
-		CVertex* prev_vertex = NULL;
-		for(std::list<CVertex>::iterator It2 = curve.m_vertices.begin(); It2 != curve.m_vertices.end(); It2++)
+		const CCurve& curve = *It;
+		const CVertex* prev_vertex = NULL;
+		for(std::list<CVertex>::const_iterator It2 = curve.m_vertices.begin(); It2 != curve.m_vertices.end(); It2++)
 		{
-			CVertex& vertex = *It2;
+			const CVertex& vertex = *It2;
 			AddVertex(booleng, vertex, prev_vertex);
 			prev_vertex = &vertex;
 			if(first_curve)last_vertex = &vertex;
@@ -298,7 +380,7 @@ void CArea::MakeGroup( Bool_Engine* booleng, bool a_not_b )
 
 				if(!first_curve)
 				{
-				booleng->AddPoint(last_vertex->m_p.x, last_vertex->m_p.y, 0);
+				booleng->AddPoint(last_vertex->m_p.x * m_units, last_vertex->m_p.y * m_units, 0);
 			}
 
 				first_curve = false;
@@ -321,7 +403,7 @@ void CArea::SetFromResult( Bool_Engine* booleng )
         // foreach point in the polygon
         while ( booleng->PolygonHasMorePoints() )
         {
-			CVertex vertex(0, Point(booleng->GetPolygonXPoint(), booleng->GetPolygonYPoint()), Point(0.0, 0.0), booleng->GetPolygonPointUserData());
+			CVertex vertex(0, Point(booleng->GetPolygonXPoint() / m_units, booleng->GetPolygonYPoint() / m_units), Point(0.0, 0.0), booleng->GetPolygonPointUserData());
 
 			curve.m_vertices.push_back(vertex);
         }
@@ -338,4 +420,22 @@ void CArea::FitArcs(){
 		CCurve& curve = *It;
 		curve.FitArcs();
 	}
+}
+
+Point CArea::NearestPoint(const Point& p)
+{
+	double best_dist = 0.0;
+	Point best_point = Point(0, 0);
+	for(std::list<CCurve>::iterator It = m_curves.begin(); It != m_curves.end(); It++)
+	{
+		CCurve& curve = *It;
+		Point near_point = curve.NearestPoint(p);
+		double dist = near_point.dist(p);
+		if(It == m_curves.begin() || dist < best_dist)
+		{
+			best_dist = dist;
+			best_point = near_point;
+		}
+	}
+	return best_point;
 }

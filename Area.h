@@ -24,6 +24,15 @@ public:
 	CVertex(int type, const Point& p, const Point& c, int user_data = 0);
 };
 
+class SpanPtr
+{
+public:
+	const Point& m_p;
+	const CVertex& m_v;
+	SpanPtr(const Point& p, const CVertex& v):m_p(p), m_v(v){}
+	Point NearestPoint(const Point& p);
+};
+
 class CCurve
 {
 	// a closed curve, please make sure you add an end point, the same as the start point
@@ -37,13 +46,14 @@ public:
 	void append(const CVertex& vertex);
 
 	void FitArcs();
+	Point NearestPoint(const Point& p);
 };
 
 class CArea
 {
-	void MakeGroup( Bool_Engine* booleng, bool a_not_b );
+	void MakeGroup( Bool_Engine* booleng, bool a_not_b )const;
 	void SetFromResult( Bool_Engine* booleng );
-	void AddVertex(Bool_Engine* booleng, CVertex& vertex, CVertex* prev_vertex = NULL);
+	void AddVertex(Bool_Engine* booleng, const CVertex& vertex, const CVertex* prev_vertex = NULL)const;
 
 public:
 	std::list<CCurve> m_curves;
@@ -55,9 +65,12 @@ public:
 
 	void append(const CCurve& curve);
 	void Subtract(const CArea& a2);
+	void Intersect(const CArea& a2);
+	void Union(const CArea& a2);
 	void Offset(double inwards_value);
 	void FitArcs();
 	unsigned int num_curves(){return m_curves.size();}
+	Point NearestPoint(const Point& p);
 };
 
 #endif // #define AREA_HEADER
