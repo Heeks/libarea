@@ -28,8 +28,8 @@ clean:
 install: $(LIBOUT)
 	strip $^
 	chmod 644 $^
-	mkdir -p $(DESTDIR)$(PREFIX)/lib/python`python -c "import sys; print sys.version[:3]"`/dist-packages/
-	install $^ $(DESTDIR)$(PREFIX)/lib/python`python -c "import sys; print sys.version[:3]"`/dist-packages/
+	mkdir -p $(DESTDIR)`python -c "from distutils.sysconfig import get_python_lib; print get_python_lib(plat_specific=1, standard_lib=0, prefix='$(PREFIX)')"`
+	install $^ $(DESTDIR)`python -c "from distutils.sysconfig import get_python_lib; print get_python_lib(plat_specific=1, standard_lib=0, prefix='$(PREFIX)')"`
 
 test:
 	python test.py
