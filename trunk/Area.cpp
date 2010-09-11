@@ -59,6 +59,12 @@ bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& migh
 	Point p2(might_be_an_arc.back()->m_p);
 	Circle c(p0, p1, p2);
 
+	const double max_arc_radius = 1.0 / Point::tolerance;
+	if (c.m_radius > max_arc_radius)
+	{
+		return(false);	// We don't want to produce an arc whose radius is too large.
+	}
+
 	const CVertex* current_vt = &prev_vt;
 	double accuracy = CArea::m_accuracy * 1.4 / CArea::m_units;
 	for(std::list<const CVertex*>::iterator It = might_be_an_arc.begin(); It != might_be_an_arc.end(); It++)
@@ -179,6 +185,46 @@ Point CCurve::NearestPoint(const Point& p)
 	return best_point;
 }
 
+void CCurve::GetBox(CBox &box)
+{
+	Point prev_p = Point(0, 0);
+	bool prev_p_valid = false;
+	for(std::list<CVertex>::iterator It = m_vertices.begin(); It != m_vertices.end(); It++)
+	{
+		CVertex& vertex = *It;
+		if(prev_p_valid)
+		{
+			SpanPtr(prev_p, vertex).GetBox(box);
+		}
+		prev_p = vertex.m_p;
+		prev_p_valid = true;
+	}
+}
+
+void CCurve::Reverse()
+{
+	std::list<CVertex> new_vertices;
+
+	CVertex* prev_v = NULL;
+
+	for(std::list<CVertex>::reverse_iterator It = m_vertices.rbegin(); It != m_vertices.rend(); It++)
+	{
+		CVertex &v = *It;
+		int type = 0;
+		Point cp(0.0, 0.0);
+		if(prev_v)
+		{
+			type = -prev_v->m_type;
+			cp = prev_v->m_c;
+		}
+		CVertex new_v(type, v.m_p, cp);
+		new_vertices.push_back(new_v);
+		prev_v = &v;
+	}
+
+	m_vertices = new_vertices;
+}
+
 Point SpanPtr::NearestPoint(const Point& p)
 {
 	if(m_v.m_type == 0)
@@ -197,6 +243,66 @@ Point SpanPtr::NearestPoint(const Point& p)
 		vc.normalize();
 		Point pn = m_p + vc * ((r - radius) / r);
 		return pn;
+	}
+}
+
+static int GetQuadrant(const Point& v){
+	// 0 = [+,+], 1 = [-,+], 2 = [-,-], 3 = [+,-]
+	if(v.x > 0)
+	{
+		if(v.y > 0)
+			return 0;
+		return 3;
+	}
+	if(v.y > 0)
+		return 1;
+	return 2;
+}
+
+static Point QuadrantEndPoint(int i)
+{
+	if(i >3)i-=4;
+	switch(i)
+	{
+	case 0:
+		return Point(0.0,1.0);
+	case 1:
+		return Point(-1.0,0.0);
+	case 2:
+		return Point(0.0,-1.0);
+	default:
+		return Point(1.0,0.0);
+	}
+}
+
+void SpanPtr::GetBox(CBox &box)
+{
+	box.Insert(m_p);
+	box.Insert(m_v.m_p);
+
+	if(this->m_v.m_type)
+	{
+		// arc, add quadrant points
+		Point vs = m_p - m_v.m_c;
+		Point ve = m_v.m_p - m_v.m_c;
+		int qs = GetQuadrant(vs);
+		int qe = GetQuadrant(ve);
+		if(m_v.m_type == -1)
+		{
+			// swap qs and qe
+			int t=qs;
+			qs = qe;
+			qe = t;
+		}
+
+		if(qe<qs)qe = qe + 4;
+
+		double rad = m_v.m_p.dist(m_v.m_c);
+
+		for(int i = qs; i<qe; i++)
+		{
+			box.Insert(m_v.m_c + QuadrantEndPoint(i) * rad);
+		}
 	}
 }
 
@@ -438,4 +544,13 @@ Point CArea::NearestPoint(const Point& p)
 		}
 	}
 	return best_point;
+}
+
+void CArea::GetBox(CBox &box)
+{
+	for(std::list<CCurve>::iterator It = m_curves.begin(); It != m_curves.end(); It++)
+	{
+		CCurve& curve = *It;
+		curve.GetBox(box);
+	}
 }
