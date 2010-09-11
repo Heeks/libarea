@@ -69,6 +69,21 @@ static void print_area(const CArea &a)
 	}
 }
 
+static unsigned int num_vertices(const CCurve& curve)
+{
+	return curve.m_vertices.size();
+}
+
+static CVertex FirstVertex(const CCurve& curve)
+{
+	return curve.m_vertices.front();
+}
+
+static CVertex LastVertex(const CCurve& curve)
+{
+	return curve.m_vertices.back();
+}
+
 static void set_round_corner_factor(double factor)
 {
 	CArea::m_round_corners_factor = factor;
@@ -110,8 +125,20 @@ BOOST_PYTHON_MODULE(area) {
         .def(bp::init<CCurve>())
         .def("getVertices", &getVertices)
         .def("append",&CCurve::append)
-        .def("print", &print_curve)
+        .def("text", &print_curve)
 		.def("NearestPoint", &CCurve::NearestPoint)
+		.def("Reverse", &CCurve::Reverse)
+		.def("getNumVertices", &num_vertices)
+		.def("FirstVertex", &FirstVertex)
+		.def("LastVertex", &LastVertex)
+    ;
+
+	bp::class_<CBox>("Box") 
+        .def(bp::init<CBox>())
+		.def("MinX", &CBox::MinX)
+		.def("MaxX", &CBox::MaxX)
+		.def("MinY", &CBox::MinY)
+		.def("MaxY", &CBox::MaxY)
     ;
 
 	bp::class_<CArea>("Area") 
@@ -119,11 +146,14 @@ BOOST_PYTHON_MODULE(area) {
         .def("getCurves", &getCurves)
         .def("append",&CArea::append)
         .def("Subtract",&CArea::Subtract)
+        .def("Intersect",&CArea::Intersect)
+        .def("Union",&CArea::Union)
         .def("Offset",&CArea::Offset)
         .def("FitArcs",&CArea::FitArcs)
-        .def("print", &print_area)
+        .def("text", &print_area)
 		.def("num_curves", &CArea::num_curves)
 		.def("NearestPoint", &CArea::NearestPoint)
+		.def("GetBox", &CArea::GetBox)
     ;
 
     bp::def("set_round_corner_factor", set_round_corner_factor);

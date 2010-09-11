@@ -191,7 +191,7 @@ void GraphList::Correction()
    TDLI<Graph> _LI=TDLI<Graph>(this);
 	int todo=_LI.count();
 
-   if ( _GC->GetInternalCorrectionFactor()) //not zero
+   if ( 1 || _GC->GetInternalCorrectionFactor()) //not zero
    {
       _LI.tohead();
       for(int i=0; i<todo ; i++)

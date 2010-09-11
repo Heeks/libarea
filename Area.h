@@ -9,6 +9,8 @@
 #include <list>
 #include <math.h>
 #include "Point.h"
+#include "Box.h"
+
 class Bool_Engine;
 class Arc;
 
@@ -31,6 +33,7 @@ public:
 	const CVertex& m_v;
 	SpanPtr(const Point& p, const CVertex& v):m_p(p), m_v(v){}
 	Point NearestPoint(const Point& p);
+	void GetBox(CBox &box);
 };
 
 class CCurve
@@ -47,6 +50,8 @@ public:
 
 	void FitArcs();
 	Point NearestPoint(const Point& p);
+	void GetBox(CBox &box);
+	void Reverse();
 };
 
 class CArea
@@ -71,6 +76,7 @@ public:
 	void FitArcs();
 	unsigned int num_curves(){return m_curves.size();}
 	Point NearestPoint(const Point& p);
+	void GetBox(CBox &box);
 };
 
 #endif // #define AREA_HEADER
