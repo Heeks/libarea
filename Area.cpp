@@ -8,6 +8,11 @@
 #include "Circle.h"
 #include "Arc.h"
 
+#ifdef CLIPPER_NOT_KBOOL
+#include "clipper.hpp"
+using namespace clipper;
+#endif
+
 const Point operator*(const double &d, const Point &p){ return p * d;}
 double Point::tolerance = 0.001;
 
@@ -310,6 +315,8 @@ double CArea::m_round_corners_factor = 1.5;
 double CArea::m_accuracy = 0.01;
 double CArea::m_units = 1.0;
 
+#ifdef CLIPPER_NOT_KBOOL
+#else
 void CArea::ArmBoolEng( Bool_Engine* booleng )
 {
     // set some global vals to arm the boolean engine
@@ -342,6 +349,7 @@ void CArea::ArmBoolEng( Bool_Engine* booleng )
     booleng->SetMaxlinemerge( MAXLINEMERGE );
     booleng->SetRoundfactor( ROUNDFACTOR );
 }
+#endif
 
 void CArea::append(const CCurve& curve)
 {
@@ -350,36 +358,78 @@ void CArea::append(const CCurve& curve)
 
 void CArea::Subtract(const CArea& a2)
 {
+#ifdef CLIPPER_NOT_KBOOL
+	Clipper c;
+	TPolyPolygon pp1, pp2;
+	MakePolyPoly(pp1);
+	a2.MakePolyPoly(pp2);
+	c.AddPolyPolygon(pp1, ptSubject);
+	c.AddPolyPolygon(pp2, ptClip);
+	TPolyPolygon solution;
+	c.Execute(ctDifference, solution);
+	SetFromResult(solution);
+#else
 	Bool_Engine* booleng = new Bool_Engine();
 	ArmBoolEng( booleng );
 	MakeGroup( booleng, true );
 	a2.MakeGroup( booleng, false );
 	booleng->Do_Operation(BOOL_A_SUB_B);
 	SetFromResult( booleng );
+#endif
 }
 
 void CArea::Intersect(const CArea& a2)
 {
+#ifdef CLIPPER_NOT_KBOOL
+	Clipper c;
+	TPolyPolygon pp1, pp2;
+	MakePolyPoly(pp1);
+	a2.MakePolyPoly(pp2);
+	c.AddPolyPolygon(pp1, ptSubject);
+	c.AddPolyPolygon(pp2, ptClip);
+	TPolyPolygon solution;
+	c.Execute(ctIntersection, solution);
+	SetFromResult(solution);
+#else
 	Bool_Engine* booleng = new Bool_Engine();
 	ArmBoolEng( booleng );
 	MakeGroup( booleng, true );
 	a2.MakeGroup( booleng, false );
 	booleng->Do_Operation(BOOL_AND);
 	SetFromResult( booleng );
+#endif
 }
 
 void CArea::Union(const CArea& a2)
 {
+#ifdef CLIPPER_NOT_KBOOL
+	Clipper c;
+	TPolyPolygon pp1, pp2;
+	MakePolyPoly(pp1);
+	a2.MakePolyPoly(pp2);
+	c.AddPolyPolygon(pp1, ptSubject);
+	c.AddPolyPolygon(pp2, ptClip);
+	TPolyPolygon solution;
+	c.Execute(ctUnion, solution);
+	SetFromResult(solution);
+#else
 	Bool_Engine* booleng = new Bool_Engine();
 	ArmBoolEng( booleng );
 	MakeGroup( booleng, true );
 	a2.MakeGroup( booleng, false );
 	booleng->Do_Operation(BOOL_OR);
 	SetFromResult( booleng );
+#endif
 }
 
 void CArea::Offset(double inwards_value)
 {
+#ifdef CLIPPER_NOT_KBOOL
+	TPolyPolygon pp, pp2;
+	MakePolyPoly(pp);
+	MakeObrounds(pp, pp2, inwards_value);
+	SetFromResult(pp2);
+#else
 	Bool_Engine* booleng = new Bool_Engine();
 	ArmBoolEng( booleng );
 	MakeGroup( booleng, true);
@@ -387,8 +437,225 @@ void CArea::Offset(double inwards_value)
 	booleng->SetCorrectionFactor( -inwards_value * m_units );
 	booleng->Do_Operation(BOOL_CORRECTION);
 	SetFromResult( booleng );
+#endif
 }
 
+#ifdef CLIPPER_NOT_KBOOL
+void CArea::AddVertex(std::list<TDoublePoint> &pts, const CVertex& vertex, const CVertex* prev_vertex)const
+{
+	if(vertex.m_type == 0 || prev_vertex == NULL)
+	{
+		pts.push_back(DoublePoint(vertex.m_p.x * m_units, vertex.m_p.y * m_units));
+	}
+	else
+	{
+		double phi,dphi,dx,dy;
+		int Segments;
+		int i;
+		double ang1,ang2,phit;
+
+		dx = (prev_vertex->m_p.x - vertex.m_c.x) * m_units;
+		dy = (prev_vertex->m_p.y - vertex.m_c.y) * m_units;
+
+		ang1=atan2(dy,dx);
+		if (ang1<0) ang1+=2.0*M_PI;
+		dx = (vertex.m_p.x - vertex.m_c.x) * m_units;
+		dy = (vertex.m_p.y - vertex.m_c.y) * m_units;
+		ang2=atan2(dy,dx);
+		if (ang2<0) ang2+=2.0*M_PI;
+
+		if (vertex.m_type == -1)
+		{ //clockwise
+			if (ang2 > ang1)
+				phit=2.0*M_PI-ang2+ ang1;
+			else
+				phit=ang1-ang2;
+		}
+		else
+		{ //counter_clockwise
+			if (ang1 > ang2)
+				phit=-(2.0*M_PI-ang1+ ang2);
+			else
+				phit=-(ang2-ang1);
+		}
+
+		//what is the delta phi to get an accurancy of aber
+		double radius = sqrt(dx*dx + dy*dy);
+		dphi=2*acos((radius-m_accuracy)/radius);
+
+		//set the number of segments
+		if (phit > 0)
+			Segments=(int)ceil(phit/dphi);
+		else
+			Segments=(int)ceil(-phit/dphi);
+
+		if (Segments <= 1)
+			Segments=1;
+		if (Segments > 100)
+			Segments=100;
+
+		dphi=phit/(Segments);
+
+		double px = prev_vertex->m_p.x * m_units;
+		double py = prev_vertex->m_p.y * m_units;
+
+		for (i=1; i<=Segments; i++)
+		{
+			dx = px - vertex.m_c.x * m_units;
+			dy = py - vertex.m_c.y * m_units;
+			phi=atan2(dy,dx);
+
+			double nx = vertex.m_c.x * m_units + radius * cos(phi-dphi);
+			double ny = vertex.m_c.y * m_units + radius * sin(phi-dphi);
+
+			pts.push_back(DoublePoint(nx, ny));
+
+			px = nx;
+			py = ny;
+		}
+	}
+}
+
+bool IsPolygonClockwise(const TPolygon& p)
+{
+	double angle = 0.0;
+	unsigned int s = p.size();
+	for(unsigned int i = 0; i<s; i++)
+	{
+		int im1 = i-1;
+		if(im1 < 0)im1 += s;
+		int im2 = i-2;
+		if(im2 < 0)im2 += s;
+
+		const TDoublePoint &pt0 = p[im2];
+		const TDoublePoint &pt1 = p[im1];
+		const TDoublePoint &pt2 = p[i];
+
+		TDoublePoint N1 = GetUnitNormal( pt0 , pt1 );
+		TDoublePoint N2 = GetUnitNormal( pt1 , pt2 );
+		//(N1.X * N2.Y - N2.X * N1.Y) == unit normal "cross product" == sin(angle)
+		angle += ( N1.X * N2.Y - N2.X * N1.Y );
+	}
+
+	return angle < 0.0;
+}
+
+void CArea::MakeObrounds(const TPolyPolygon &pp, TPolyPolygon &pp_new, double radius)const
+{
+	TPolyPolygon pp_temp;
+
+	for(unsigned int i = 0; i < pp.size(); i++)
+	{
+		Clipper c;
+		const TPolygon& p = pp[i];
+		bool clockwise = IsPolygonClockwise(p);
+
+		for(unsigned int j = 0; j < p.size(); j++)
+		{
+			TPolygon obround;
+			MakeObround((j == 0) ? p[p.size() - 1]:p[j-1], p[j], obround, radius);
+			c.AddPolygon(obround, ptSubject);
+		}
+		TPolyPolygon solution;
+		c.Execute(ctUnion, solution, pftNonZero);
+		for(unsigned int i = 0; i < solution.size(); i++)
+		{
+			const TPolygon& p = solution[i];
+			bool add = !clockwise;
+			if(IsPolygonClockwise(p))add = !add;
+			if(radius > 0)add = !add;
+			if(add)pp_temp.push_back(p);
+		}
+	}
+
+	Clipper c;
+	for(unsigned int i = 0; i < pp_temp.size(); i++)
+	{
+		const TPolygon& p = pp_temp[i];
+		bool clockwise = IsPolygonClockwise(p);
+		c.AddPolygon(p, ptSubject);
+	}
+	c.Execute(ctDifference, pp_new, pftNonZero);
+}
+
+void CArea::MakeObround(const TDoublePoint &pt0, const TDoublePoint &pt1, TPolygon &p, double radius)const
+{
+	std::list<TDoublePoint> pts;
+	Point p0(pt0.X, pt0.Y);
+	Point p1(pt1.X, pt1.Y);
+	Point forward = p1 - p0;
+	Point right(forward.y, -forward.x);
+	right.normalize();
+
+	CVertex v0(0, p0 + right * radius, Point(0, 0));
+	CVertex v1(0, p1 + right * radius, Point(0, 0));
+	CVertex v2(1, p1 - right * radius, p1);
+	CVertex v3(0, p0 - right * radius, Point(0, 0));
+	CVertex v4(1, p0 + right * radius, p0);
+
+	AddVertex(pts, v1, &v0);
+	AddVertex(pts, v2, &v1);
+	AddVertex(pts, v3, &v2);
+	AddVertex(pts, v4, &v3);
+
+	p.reserve(pts.size());
+	for(std::list<TDoublePoint>::iterator It = pts.begin(); It != pts.end(); It++)
+	{
+		p.push_back(*It);
+	}
+}
+
+void CArea::MakePolyPoly( TPolyPolygon &pp )const{
+	pp.clear();
+
+	for(std::list<CCurve>::const_iterator It = m_curves.begin(); It != m_curves.end(); It++)
+	{
+		std::list<TDoublePoint> pts;
+		const CCurve& curve = *It;
+		const CVertex* prev_vertex = NULL;
+		for(std::list<CVertex>::const_iterator It2 = curve.m_vertices.begin(); It2 != curve.m_vertices.end(); It2++)
+		{
+			const CVertex& vertex = *It2;
+			if(prev_vertex)AddVertex(pts, vertex, prev_vertex);
+			prev_vertex = &vertex;
+		}
+
+		TPolygon p;
+		p.reserve(pts.size());
+		for(std::list<TDoublePoint>::iterator It = pts.begin(); It != pts.end(); It++)
+		{
+			p.push_back(*It);
+		}
+		pp.push_back(p);
+	}
+}
+
+void CArea::SetFromResult( const TPolyPolygon& pp, resultType result_type )
+{
+	// delete existing geometry
+	m_curves.clear();
+
+	for(unsigned int i = 0; i < pp.size(); i++)
+	{
+		const TPolygon& p = pp[i];
+
+		if(result_type != rtAll && (IsPolygonClockwise(p) != (result_type == rtClockwise)))
+			continue;
+
+		m_curves.push_back(CCurve());
+		CCurve &curve = m_curves.back();
+		for(unsigned int j = 0; j < p.size(); j++)
+		{
+			const TDoublePoint &pt = p[j];
+			CVertex vertex(0, Point(pt.X / m_units, pt.Y / m_units), Point(0.0, 0.0));
+			curve.m_vertices.push_back(vertex);
+        }
+		curve.m_vertices.push_back(curve.m_vertices.front()); // make a copy of the first point at the end
+		curve.FitArcs();
+    }
+}
+
+#else
 void CArea::AddVertex(Bool_Engine* booleng, const CVertex& vertex, const CVertex* prev_vertex)const
 {
 	if(vertex.m_type == 0 || prev_vertex == NULL)
@@ -500,7 +767,6 @@ void CArea::SetFromResult( Bool_Engine* booleng )
 	// delete existing geometry
 	m_curves.clear();
 
-
 	while ( booleng->StartPolygonGet() )
     {
 		m_curves.push_back(CCurve());
@@ -519,6 +785,7 @@ void CArea::SetFromResult( Bool_Engine* booleng )
         booleng->EndPolygonGet();
     }
 }
+#endif
 
 void CArea::FitArcs(){
 	for(std::list<CCurve>::iterator It = m_curves.begin(); It != m_curves.end(); It++)
