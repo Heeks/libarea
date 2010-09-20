@@ -11,6 +11,10 @@
 #include "Point.h"
 #include "Box.h"
 
+#ifdef CLIPPER_NOT_KBOOL
+#include "clipper.hpp"
+#endif
+
 class Bool_Engine;
 class Arc;
 
@@ -54,11 +58,25 @@ public:
 	void Reverse();
 };
 
+enum resultType{
+	rtAll,
+	rtClockwise,
+	rtAntiClockwise,
+};
+
 class CArea
 {
+#ifdef CLIPPER_NOT_KBOOL
+	void MakePolyPoly( clipper::TPolyPolygon &pp )const;
+	void SetFromResult( const clipper::TPolyPolygon& pp, resultType result_type = rtAll );
+	void AddVertex(std::list<clipper::TDoublePoint> &pts, const CVertex& vertex, const CVertex* prev_vertex = NULL)const;
+	void MakeObrounds(const clipper::TPolyPolygon &pp, clipper::TPolyPolygon &pp_new, double radius)const;
+	void MakeObround(const clipper::TDoublePoint &pt0, const clipper::TDoublePoint &pt1, clipper::TPolygon &p, double radius)const;
+#else
 	void MakeGroup( Bool_Engine* booleng, bool a_not_b )const;
 	void SetFromResult( Bool_Engine* booleng );
 	void AddVertex(Bool_Engine* booleng, const CVertex& vertex, const CVertex* prev_vertex = NULL)const;
+#endif
 
 public:
 	std::list<CCurve> m_curves;
@@ -66,7 +84,10 @@ public:
 	static double m_accuracy;
 	static double m_units; // 1.0 for mm, 25.4 for inches. All points are multiplied by this before going to the engine
 
+#ifdef CLIPPER_NOT_KBOOL
+#else
 	static void ArmBoolEng( Bool_Engine* booleng );
+#endif
 
 	void append(const CCurve& curve);
 	void Subtract(const CArea& a2);

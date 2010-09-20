@@ -28,6 +28,10 @@
 #include <boost/python/wrapper.hpp>
 #include <boost/python/call.hpp>
 
+#include "clipper.hpp"
+using namespace clipper;
+
+
 namespace bp = boost::python;
 
 boost::python::list getVertices(const CCurve& curve) {
@@ -94,6 +98,11 @@ static void set_units(double units)
 	CArea::m_units = units;
 }
 
+static double get_units()
+{
+	return CArea::m_units;
+}
+
 BOOST_PYTHON_MODULE(area) {
 	bp::class_<Point>("Point") 
         .def(bp::init<double, double>())
@@ -158,4 +167,5 @@ BOOST_PYTHON_MODULE(area) {
 
     bp::def("set_round_corner_factor", set_round_corner_factor);
     bp::def("set_units", set_units);
+    bp::def("get_units", get_units);
 }
