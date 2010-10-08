@@ -427,7 +427,7 @@ void CArea::Offset(double inwards_value)
 #ifdef CLIPPER_NOT_KBOOL
 	TPolyPolygon pp, pp2;
 	MakePolyPoly(pp);
-	MakeObrounds(pp, pp2, inwards_value);
+	MakeObrounds(pp, pp2, -inwards_value);
 	SetFromResult(pp2);
 #else
 	Bool_Engine* booleng = new Bool_Engine();
@@ -518,91 +518,88 @@ void CArea::AddVertex(std::list<TDoublePoint> &pts, const CVertex& vertex, const
 
 bool IsPolygonClockwise(const TPolygon& p)
 {
-	double angle = 0.0;
+	double area = 0.0;
 	unsigned int s = p.size();
 	for(unsigned int i = 0; i<s; i++)
 	{
 		int im1 = i-1;
 		if(im1 < 0)im1 += s;
-		int im2 = i-2;
-		if(im2 < 0)im2 += s;
 
-		const TDoublePoint &pt0 = p[im2];
-		const TDoublePoint &pt1 = p[im1];
-		const TDoublePoint &pt2 = p[i];
+		const TDoublePoint &pt0 = p[im1];
+		const TDoublePoint &pt1 = p[i];
 
-		TDoublePoint N1 = GetUnitNormal( pt0 , pt1 );
-		TDoublePoint N2 = GetUnitNormal( pt1 , pt2 );
-		//(N1.X * N2.Y - N2.X * N1.Y) == unit normal "cross product" == sin(angle)
-		angle += ( N1.X * N2.Y - N2.X * N1.Y );
+		area += 0.5 * (pt1.X - pt0.X) * (pt0.Y + pt1.Y);
 	}
 
-	return angle < 0.0;
+	return area > 0.0;
 }
 
 void CArea::MakeObrounds(const TPolyPolygon &pp, TPolyPolygon &pp_new, double radius)const
 {
-	TPolyPolygon pp_temp;
+	Clipper c;
+
+	printf("radius = %lf\n", radius);
+
+	bool reverse = (radius < 0);
 
 	for(unsigned int i = 0; i < pp.size(); i++)
 	{
-		Clipper c;
 		const TPolygon& p = pp[i];
 		bool clockwise = IsPolygonClockwise(p);
+		//printf("polygon clockwise = %s\n", clockwise ? "CW" : "ACW");
 
-		for(unsigned int j = 0; j < p.size(); j++)
+		std::list<TDoublePoint> pts;
+
+		if(p.size() > 2)
 		{
-			TPolygon obround;
-			MakeObround((j == 0) ? p[p.size() - 1]:p[j-1], p[j], obround, radius);
-			c.AddPolygon(obround, ptSubject);
+			if(reverse)
+			{
+				for(unsigned int j = p.size()-1; j > 1; j--)MakeObround(p[j], p[j-1], p[j-2], pts, radius);
+				MakeObround(p[1], p[0], p[p.size()-1], pts, radius);
+				MakeObround(p[0], p[p.size()-1], p[p.size()-2], pts, radius);
+			}
+			else
+			{
+				MakeObround(p[p.size()-2], p[p.size()-1], p[0], pts, radius);
+				MakeObround(p[p.size()-1], p[0], p[1], pts, radius);
+				for(unsigned int j = 2; j < p.size(); j++)MakeObround(p[j-2], p[j-1], p[j], pts, radius);
+			}
 		}
-		TPolyPolygon solution;
-		c.Execute(ctUnion, solution, pftNonZero);
-		for(unsigned int i = 0; i < solution.size(); i++)
+
+		TPolygon loopy_polygon;
+		loopy_polygon.reserve(pts.size());
+		for(std::list<TDoublePoint>::iterator It = pts.begin(); It != pts.end(); It++)
 		{
-			const TPolygon& p = solution[i];
-			bool add = !clockwise;
-			if(IsPolygonClockwise(p))add = !add;
-			if(radius > 0)add = !add;
-			if(add)pp_temp.push_back(p);
+			loopy_polygon.push_back(*It);
 		}
+		c.AddPolygon(loopy_polygon, ptSubject);
 	}
 
-	Clipper c;
-	for(unsigned int i = 0; i < pp_temp.size(); i++)
-	{
-		const TPolygon& p = pp_temp[i];
-		bool clockwise = IsPolygonClockwise(p);
-		c.AddPolygon(p, ptSubject);
-	}
-	c.Execute(ctDifference, pp_new, pftNonZero);
+	//typedef enum { ctIntersection, ctUnion, ctDifference, ctXor } TClipType;
+	c.ForceOrientation(false);
+	c.Execute(ctXor, pp_new, pftNonZero, pftNonZero);
 }
 
-void CArea::MakeObround(const TDoublePoint &pt0, const TDoublePoint &pt1, TPolygon &p, double radius)const
+void CArea::MakeObround(const TDoublePoint &pt0, const TDoublePoint &pt1, const TDoublePoint &pt2, std::list<TDoublePoint> &pts, double radius)const
 {
-	std::list<TDoublePoint> pts;
 	Point p0(pt0.X, pt0.Y);
 	Point p1(pt1.X, pt1.Y);
-	Point forward = p1 - p0;
-	Point right(forward.y, -forward.x);
-	right.normalize();
+	Point p2(pt2.X, pt2.Y);
+	Point forward0 = p1 - p0;
+	Point right0(forward0.y, -forward0.x);
+	right0.normalize();
+	Point forward1 = p2 - p1;
+	Point right1(forward1.y, -forward1.x);
+	right1.normalize();
 
-	CVertex v0(0, p0 + right * radius, Point(0, 0));
-	CVertex v1(0, p1 + right * radius, Point(0, 0));
-	CVertex v2(1, p1 - right * radius, p1);
-	CVertex v3(0, p0 - right * radius, Point(0, 0));
-	CVertex v4(1, p0 + right * radius, p0);
+	int arc_dir = (radius > 0) ? 1 : -1;
+
+	CVertex v0(0, p1 + right0 * radius, Point(0, 0));
+	CVertex v1(arc_dir, p1 + right1 * radius, p1);
+	CVertex v2(0, p1 + right1 * radius, Point(0, 0));
 
 	AddVertex(pts, v1, &v0);
 	AddVertex(pts, v2, &v1);
-	AddVertex(pts, v3, &v2);
-	AddVertex(pts, v4, &v3);
-
-	p.reserve(pts.size());
-	for(std::list<TDoublePoint>::iterator It = pts.begin(); It != pts.end(); It++)
-	{
-		p.push_back(*It);
-	}
 }
 
 void CArea::MakePolyPoly( TPolyPolygon &pp )const{

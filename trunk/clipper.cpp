@@ -206,54 +206,34 @@ bool IntersectPoint(TEdge &edge1, TEdge &edge2, TDoublePoint &ip)
 }
 //------------------------------------------------------------------------------
 
-TDoublePoint GetUnitNormal( const TDoublePoint &pt1, const TDoublePoint &pt2)
+double GetArea(TPolyPt *pt, TriState &isHole)
 {
-  double dx; double dy; double f;
+	double area = 0.0;
+	TPolyPt *ptStart, *ptNext;
+	ptStart = pt;
+	ptNext = pt->next;
+	do
+	{
+		// set isHole, if it is defined for this point
+		if(pt->isHole != sUndefined)isHole = pt->isHole;
 
-  dx = ( pt2.X - pt1.X );
-  dy = ( pt2.Y - pt1.Y );
-  if(  ( dx == 0 ) && ( dy == 0 ) ) return DoublePoint( 0, 0 );
+		// add the area under the span
+		area += 0.5 * (pt->next->pt.X - pt->pt.X) * (pt->pt.Y + pt->next->pt.Y);
+		pt = pt->next;
+	}while(pt != ptStart);
 
-  f = 1 *1.0/ _hypot( dx , dy );
-  //f = 1 *1.0/ std::hypot( dx , dy );
-  dx = dx * f;
-  dy = dy * f;
-  return DoublePoint(dy, -dx);
+	return area;
 }
+
 //------------------------------------------------------------------------------
 
 bool ValidateOrientation(TPolyPt *pt)
 {
-  TPolyPt *ptStart, *bottomPt, *ptPrev, *ptNext;
-  TDoublePoint N1; TDoublePoint N2;
-  bool IsClockwise;
+	TriState isHole = sUndefined;
+	double area = GetArea(pt, isHole);
+	bool IsClockwise = (area > 0);
 
-  //compares the orientation (clockwise vs counter-clockwise) of a *simple*
-  //polygon with its hole status (ie test whether an inner or outer polygon).
-  //nb: complex polygons have indeterminate orientations.
-  bottomPt = pt;
-  ptStart = pt;
-  pt = pt->next;
-  while(  ( pt != ptStart ) )
-  {
-  if(  ( pt->pt.Y > bottomPt->pt.Y ) ||
-    ( ( pt->pt.Y == bottomPt->pt.Y ) && ( pt->pt.X > bottomPt->pt.X ) ) )
-    bottomPt = pt;
-  pt = pt->next;
-  }
-
-  ptPrev = bottomPt->prev;
-  ptNext = bottomPt->next;
-  N1 = GetUnitNormal( ptPrev->pt , bottomPt->pt );
-  N2 = GetUnitNormal( bottomPt->pt , ptNext->pt );
-  //(N1.X * N2.Y - N2.X * N1.Y) == unit normal "cross product" == sin(angle)
-  IsClockwise = ( N1.X * N2.Y - N2.X * N1.Y ) > 0; //ie angle > 180deg.
-
-  while (bottomPt->isHole == sUndefined &&
-    bottomPt->next->pt.Y >= bottomPt->pt.Y) bottomPt = bottomPt->next;
-  while (bottomPt->isHole == sUndefined &&
-    bottomPt->prev->pt.Y >= bottomPt->pt.Y) bottomPt = bottomPt->prev;
-  return (IsClockwise != (bottomPt->isHole == sTrue));
+	return (IsClockwise != (isHole == sTrue));
 }
 //------------------------------------------------------------------------------
 
@@ -1612,6 +1592,7 @@ void Clipper::BuildResult(TPolyPolygon &polypoly){
 
   k = 0;
   polypoly.resize(m_PolyPts.size());
+
   for (i = 0; i < m_PolyPts.size(); ++i) {
     if (m_PolyPts[i]) {
 
