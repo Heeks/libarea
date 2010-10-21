@@ -10,7 +10,7 @@ LIBS    = -lstdc++ `python-config --libs`
 CFLAGS  = -Wall -I/usr/include `python-config --includes` -I./ -I./kbool/include -g -fPIC
 
 LIBNAME	= area
-LIBOBJS	= Arc.o Area.o booleng.o Circle.o graph.o graphlst.o instonly.o line.o link.o lpoint.o node.o PythonStuff.o record.o scanbeam.o
+LIBOBJS	= Arc.o Area.o AreaOrderer.o booleng.o Circle.o graph.o graphlst.o instonly.o line.o link.o lpoint.o node.o PythonStuff.o record.o scanbeam.o
 LIBDIR	= .libs/
 LIBOUT	= $(LIBDIR)$(LIBNAME).so
 
@@ -38,6 +38,9 @@ Arc.o: Arc.cpp
 	$(CC) -c $? ${CFLAGS} -o $@
 
 Area.o: Area.cpp
+	$(CC) -c $? ${CFLAGS} -o $@
+
+AreaOrderer.o: AreaOrderer.cpp
 	$(CC) -c $? ${CFLAGS} -o $@
 
 booleng.o: kbool/src/booleng.cpp

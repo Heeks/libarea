@@ -71,8 +71,8 @@ enum resultType{
 class CArea
 {
 #ifdef CLIPPER_NOT_KBOOL
-	void MakePolyPoly( clipper::TPolyPolygon &pp )const;
-	void SetFromResult( const clipper::TPolyPolygon& pp, resultType result_type = rtAll );
+	void MakePolyPoly( clipper::TPolyPolygon &pp, bool reverse = true )const;
+	void SetFromResult( const clipper::TPolyPolygon& pp, bool reverse = true );
 	void AddVertex(std::list<clipper::TDoublePoint> &pts, const CVertex& vertex, const CVertex* prev_vertex = NULL)const;
 	void OffsetWithLoops(const clipper::TPolyPolygon &pp, clipper::TPolyPolygon &pp_new, double inwards_value)const;
 	void MakeLoop(const clipper::TDoublePoint &pt0, const clipper::TDoublePoint &pt1, const clipper::TDoublePoint &pt2, std::list<clipper::TDoublePoint> &pts, double radius)const;
