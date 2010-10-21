@@ -38,6 +38,8 @@ public:
 	SpanPtr(const Point& p, const CVertex& v):m_p(p), m_v(v){}
 	Point NearestPoint(const Point& p);
 	void GetBox(CBox &box);
+	double IncludedAngle()const;
+	double GetArea()const;
 };
 
 class CCurve
@@ -56,6 +58,8 @@ public:
 	Point NearestPoint(const Point& p);
 	void GetBox(CBox &box);
 	void Reverse();
+	double GetArea()const;
+	bool IsClockwise()const{return GetArea()>0;}
 };
 
 enum resultType{
@@ -70,8 +74,8 @@ class CArea
 	void MakePolyPoly( clipper::TPolyPolygon &pp )const;
 	void SetFromResult( const clipper::TPolyPolygon& pp, resultType result_type = rtAll );
 	void AddVertex(std::list<clipper::TDoublePoint> &pts, const CVertex& vertex, const CVertex* prev_vertex = NULL)const;
-	void MakeObrounds(const clipper::TPolyPolygon &pp, clipper::TPolyPolygon &pp_new, double radius)const;
-	void MakeObround(const clipper::TDoublePoint &pt0, const clipper::TDoublePoint &pt1, const clipper::TDoublePoint &pt2, std::list<clipper::TDoublePoint> &pts, double radius)const;
+	void OffsetWithLoops(const clipper::TPolyPolygon &pp, clipper::TPolyPolygon &pp_new, double inwards_value)const;
+	void MakeLoop(const clipper::TDoublePoint &pt0, const clipper::TDoublePoint &pt1, const clipper::TDoublePoint &pt2, std::list<clipper::TDoublePoint> &pts, double radius)const;
 #else
 	void MakeGroup( Bool_Engine* booleng, bool a_not_b )const;
 	void SetFromResult( Bool_Engine* booleng );
@@ -98,6 +102,7 @@ public:
 	unsigned int num_curves(){return m_curves.size();}
 	Point NearestPoint(const Point& p);
 	void GetBox(CBox &box);
+	void Reorder();
 };
 
 #endif // #define AREA_HEADER

@@ -140,6 +140,8 @@ BOOST_PYTHON_MODULE(area) {
 		.def("getNumVertices", &num_vertices)
 		.def("FirstVertex", &FirstVertex)
 		.def("LastVertex", &LastVertex)
+		.def("GetArea", &CCurve::GetArea)
+		.def("IsClockwise", &CCurve::IsClockwise)
     ;
 
 	bp::class_<CBox>("Box") 
@@ -163,6 +165,7 @@ BOOST_PYTHON_MODULE(area) {
 		.def("num_curves", &CArea::num_curves)
 		.def("NearestPoint", &CArea::NearestPoint)
 		.def("GetBox", &CArea::GetBox)
+		.def("Reorder", &CArea::Reorder)
     ;
 
     bp::def("set_round_corner_factor", set_round_corner_factor);

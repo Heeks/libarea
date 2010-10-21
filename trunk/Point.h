@@ -25,6 +25,9 @@ public:
     double length()const;
     void normalize();
 	double operator*(const Point &p)const{return (x * p.x + y * p.y);}// dot product
+	double operator^(const Point &p)const{return (x * p.y - y * p.x);}// cross product m0.m1.sin a = v0 ^ v1
+	Point operator~(void)const{return Point(-y, x);}// perp to left
+	Point operator-(void)const{return Point(-x, -y);}// v1 = -v0;  (unary minus)
 };
 
 const Point operator*(const double &d, const Point &p);
