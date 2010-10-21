@@ -5,89 +5,117 @@
 #include "AreaOrderer.h"
 #include "Area.h"
 
-CAreaOrderer::CAreaOrderer()
-{
-}
-	
-eOverlapType CAreaOrderer::GetOverlapType(const CArea& a1, const CArea& a2)const
-{
-	CArea temp_a1(a1);
-	temp_a1.Subtract(a2);
-	if(temp_a1.m_curves.size() == 0)
-	{
-		return eInside;
-	}
+CAreaOrderer* CInnerCurves::area_orderer = NULL;
 
-	CArea temp_a2(a2);
-	temp_a2.Subtract(a1);
-	if(temp_a2.m_curves.size() == 0)
-	{
-		return eOutside;
-	}
-
-	return eSiblings;
+CInnerCurves::CInnerCurves(CInnerCurves* pOuter, const CCurve* curve)
+{
+	m_pOuter = pOuter;
+	m_curve = curve;
 }
 
-void CAreaOrderer::Insert(const CCurve* pcurve)
+void CInnerCurves::Insert(const CCurve* pcurve)
 {
-	CArea a1;
-	CCurve curve(*pcurve);
-	if(curve.IsClockwise())curve.Reverse();
-	a1.m_curves.push_back(curve);
+	std::list<CInnerCurves*> outside_of_these;
 
-	for(std::list<CArea>::iterator It = m_areas.begin(); It != m_areas.end(); It++)
+	// check all inner curves
+	for(std::set<CInnerCurves*>::iterator It = m_inner_curves.begin(); It != m_inner_curves.end(); It++)
 	{
-		CArea& a2 = *It;
+		CInnerCurves* c = *It;
 
-		switch(GetOverlapType(a1, a2))
+		switch(GetOverlapType(pcurve, c->m_curve))
 		{
 		case eOutside:
-			{
-				// insert a new area, before this one
-				m_areas.insert(It, a1);
-				printf("outside\n");
-				return;
-			}
+			outside_of_these.push_back(c);
 			break;
 
 		case eInside:
-				printf("inside\n");
-			// continue to the next area
-			break;
+			// insert in this inner curve
+			c->Insert(pcurve);
+			return;
 
-		case eSiblings:
-			{
-				printf("siblings\n");
-				// add the curve to this area
-				a2.m_curves.push_back(curve);
-				return;
-			}
+		default:
 			break;
 		}
 	}
 
-	// only gets here if the curve is inside all the existing areas
+	// add as a new inner
+	CInnerCurves* new_item = new CInnerCurves(this, pcurve);
+	this->m_inner_curves.insert(new_item);
 
-	// add a new area
-	m_areas.push_back(a1);
+	for(std::list<CInnerCurves*>::iterator It = outside_of_these.begin(); It != outside_of_these.end(); It++)
+	{
+		// move items
+		CInnerCurves* c = *It;
+		c->m_pOuter = new_item;
+		new_item->m_inner_curves.insert(c);
+		this->m_inner_curves.erase(c);
+	}
+}
+
+eOverlapType CInnerCurves::GetOverlapType(const CCurve* c1, const CCurve* c2)const
+{
+	CArea a1;
+	a1.m_curves.push_back(*c1);
+	CArea a2;
+	a2.m_curves.push_back(*c2);
+	a1.Subtract(a2);
+	if(a1.m_curves.size() == 0)
+	{
+		return eInside;
+	}
+
+	a1.m_curves.clear();
+	a1.m_curves.push_back(*c1);
+	a2.Subtract(a1);
+	if(a2.m_curves.size() == 0)
+	{
+		return eOutside;
+	}
+
+	a2.m_curves.clear();
+	a2.m_curves.push_back(*c2);
+	a1.Intersect(a2);
+	if(a1.m_curves.size() == 0)
+	{
+		return eSiblings;
+	}
+
+	return eCrossing;
+}
+
+void CInnerCurves::GetArea(CArea &area, bool outside)
+{
+	for(std::set<CInnerCurves*>::iterator It = m_inner_curves.begin(); It != m_inner_curves.end(); It++)
+	{
+		CInnerCurves* c = *It;
+		area.m_curves.push_back(*c->m_curve);
+		if(!outside)area.m_curves.back().Reverse();
+		c->GetArea(area, !outside);
+	}
+}
+
+CAreaOrderer::CAreaOrderer()
+{
+	m_top_level = new CInnerCurves(NULL, NULL);
+}
+
+void CAreaOrderer::Insert(CCurve* pcurve)
+{
+	CInnerCurves::area_orderer = this;
+
+	// make them all anti-clockwise as they come in
+	if(pcurve->IsClockwise())pcurve->Reverse();
+
+	m_top_level->Insert(pcurve);
 }
 
 CArea CAreaOrderer::ResultArea()const
 {
 	CArea a;
-	bool outside = true;
 
-	for(std::list<CArea>::const_iterator It = m_areas.begin(); It != m_areas.end(); It++)
+	if(m_top_level)
 	{
-		const CArea& a2 = *It;
-
-		for(std::list<CCurve>::const_iterator CIt = a2.m_curves.begin(); CIt != a2.m_curves.end(); CIt++)
-		{
-			const CCurve& c = *CIt;
-			a.m_curves.push_back(c);
-			if(!outside)a.m_curves.back().Reverse();			
-		}
-		outside = !outside;
+		m_top_level->GetArea(a, true);
 	}
 
 	return a;

@@ -4,6 +4,7 @@
 
 #pragma once
 #include <list>
+#include <set>
 
 class CArea;
 class CCurve;
@@ -13,17 +14,34 @@ enum eOverlapType
 	eOutside,
 	eInside,
 	eSiblings,
+	eCrossing,
+};
+
+class CAreaOrderer;
+
+class CInnerCurves
+{
+	CInnerCurves* m_pOuter;
+	const CCurve* m_curve; // always empty if top level
+	std::set<CInnerCurves*> m_inner_curves;
+
+	eOverlapType GetOverlapType(const CCurve* c1, const CCurve* c2)const;
+
+public:
+	static CAreaOrderer* area_orderer;
+	CInnerCurves(CInnerCurves* pOuter, const CCurve* curve);
+
+	void Insert(const CCurve* pcurve);
+	void GetArea(CArea &area, bool outside);
 };
 
 class CAreaOrderer
 {
-	std::list<CArea> m_areas; // ordered areas, outside first, containing only anti-clockwise curves
-	
-	eOverlapType GetOverlapType(const CArea& a1, const CArea& a2)const;
-
 public:
+	CInnerCurves* m_top_level;
+
 	CAreaOrderer();
 
-	void Insert(const CCurve* pcurve);
+	void Insert(CCurve* pcurve);
 	CArea ResultArea()const;
 };

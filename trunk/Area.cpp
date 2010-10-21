@@ -492,9 +492,9 @@ void CArea::Offset(double inwards_value)
 {
 #ifdef CLIPPER_NOT_KBOOL
 	TPolyPolygon pp, pp2;
-	MakePolyPoly(pp);
+	MakePolyPoly(pp, false);
 	OffsetWithLoops(pp, pp2, inwards_value);
-	SetFromResult(pp2);
+	SetFromResult(pp2, false);
 #else
 	Bool_Engine* booleng = new Bool_Engine();
 	ArmBoolEng( booleng );
@@ -702,7 +702,7 @@ void CArea::MakeLoop(const TDoublePoint &pt0, const TDoublePoint &pt1, const TDo
 	AddVertex(pts, v2, &v1);
 }
 
-void CArea::MakePolyPoly( TPolyPolygon &pp )const{
+void CArea::MakePolyPoly( TPolyPolygon &pp, bool reverse )const{
 	pp.clear();
 
 	for(std::list<CCurve>::const_iterator It = m_curves.begin(); It != m_curves.end(); It++)
@@ -718,16 +718,23 @@ void CArea::MakePolyPoly( TPolyPolygon &pp )const{
 		}
 
 		TPolygon p;
-		p.reserve(pts.size());
-		for(std::list<TDoublePoint>::iterator It = pts.begin(); It != pts.end(); It++)
+		p.resize(pts.size());
+		if(reverse)
 		{
-			p.push_back(*It);
+			unsigned int i = pts.size() - 1;// clipper wants them the opposite way to CArea
+			for(std::list<TDoublePoint>::iterator It = pts.begin(); It != pts.end(); It++, i--)p[i] = *It;
 		}
+		else
+		{
+			unsigned int i = 0;
+			for(std::list<TDoublePoint>::iterator It = pts.begin(); It != pts.end(); It++, i++)p[i] = *It;
+		}
+
 		pp.push_back(p);
 	}
 }
 
-void CArea::SetFromResult( const TPolyPolygon& pp, resultType result_type )
+void CArea::SetFromResult( const TPolyPolygon& pp, bool reverse )
 {
 	// delete existing geometry
 	m_curves.clear();
@@ -736,18 +743,19 @@ void CArea::SetFromResult( const TPolyPolygon& pp, resultType result_type )
 	{
 		const TPolygon& p = pp[i];
 
-		if(result_type != rtAll && (IsPolygonClockwise(p) != (result_type == rtClockwise)))
-			continue;
-
 		m_curves.push_back(CCurve());
 		CCurve &curve = m_curves.back();
 		for(unsigned int j = 0; j < p.size(); j++)
 		{
 			const TDoublePoint &pt = p[j];
 			CVertex vertex(0, Point(pt.X / m_units, pt.Y / m_units), Point(0.0, 0.0));
-			curve.m_vertices.push_back(vertex);
+			if(reverse)curve.m_vertices.push_front(vertex);
+			else curve.m_vertices.push_back(vertex);
         }
-		curve.m_vertices.push_back(curve.m_vertices.front()); // make a copy of the first point at the end
+		// make a copy of the first point at the end
+		if(reverse)curve.m_vertices.push_front(curve.m_vertices.front());
+		else curve.m_vertices.push_back(curve.m_vertices.front());
+
 		curve.FitArcs();
     }
 }
