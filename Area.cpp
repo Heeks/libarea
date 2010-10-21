@@ -7,6 +7,7 @@
 #include "kbool/include/booleng.h"
 #include "Circle.h"
 #include "Arc.h"
+#include "AreaOrderer.h"
 
 #ifdef CLIPPER_NOT_KBOOL
 #include "clipper.hpp"
@@ -230,6 +231,24 @@ void CCurve::Reverse()
 	m_vertices = new_vertices;
 }
 
+double CCurve::GetArea()const
+{
+	double area = 0.0;
+	Point prev_p = Point(0, 0);
+	bool prev_p_valid = false;
+	for(std::list<CVertex>::const_iterator It = m_vertices.begin(); It != m_vertices.end(); It++)
+	{
+		const CVertex& vertex = *It;
+		if(prev_p_valid)
+		{
+			area += SpanPtr(prev_p, vertex).GetArea();
+		}
+		prev_p = vertex.m_p;
+		prev_p_valid = true;
+	}
+	return area;
+}
+
 Point SpanPtr::NearestPoint(const Point& p)
 {
 	if(m_v.m_type == 0)
@@ -309,6 +328,53 @@ void SpanPtr::GetBox(CBox &box)
 			box.Insert(m_v.m_c + QuadrantEndPoint(i) * rad);
 		}
 	}
+}
+
+double IncludedAngle(const Point& v0, const Point& v1, int dir) {
+	// returns the absolute included angle between 2 vectors in the direction of dir ( 1=acw  -1=cw)
+	double inc_ang = v0 * v1;
+	if(inc_ang > 1. - 1.0e-10) return 0;
+	if(inc_ang < -1. + 1.0e-10)
+		inc_ang = M_PI;  
+	else {									// dot product,   v1 . v2  =  cos ang
+		if(inc_ang > 1.0) inc_ang = 1.0;
+		inc_ang = acos(inc_ang);									// 0 to pi radians
+
+		if(dir * (v0 ^ v1) < 0) inc_ang = 2 * M_PI - inc_ang ;		// cp
+	}
+	return dir * inc_ang;
+}
+
+double SpanPtr::IncludedAngle()const
+{
+	if(m_v.m_type)
+	{
+		Point vs = ~(m_p - m_v.m_c);
+		Point ve = ~(m_v.m_p - m_v.m_c);
+		if(m_v.m_type == -1)
+		{
+			vs = -vs;
+			ve = -ve;
+		}
+		vs.normalize();
+		ve.normalize();
+
+		return ::IncludedAngle(vs, ve, m_v.m_type);
+	}
+
+	return 0.0;
+}
+
+double SpanPtr::GetArea()const
+{
+	if(m_v.m_type)
+	{
+		double angle = IncludedAngle();
+		double radius = m_p.dist(m_v.m_c);
+		return ( 0.5 * ((m_v.m_c.x - m_p.x) * (m_v.m_c.y + m_p.y) - (m_v.m_c.x - m_v.m_p.x) * (m_v.m_c.y + m_v.m_p.y) - angle * radius * radius));
+	}
+
+	return 0.5 * (m_v.m_p.x - m_p.x) * (m_p.y + m_v.m_p.y);
 }
 
 double CArea::m_round_corners_factor = 1.5;
@@ -427,7 +493,7 @@ void CArea::Offset(double inwards_value)
 #ifdef CLIPPER_NOT_KBOOL
 	TPolyPolygon pp, pp2;
 	MakePolyPoly(pp);
-	MakeObrounds(pp, pp2, -inwards_value);
+	OffsetWithLoops(pp, pp2, inwards_value);
 	SetFromResult(pp2);
 #else
 	Bool_Engine* booleng = new Bool_Engine();
@@ -534,19 +600,32 @@ bool IsPolygonClockwise(const TPolygon& p)
 	return area > 0.0;
 }
 
-void CArea::MakeObrounds(const TPolyPolygon &pp, TPolyPolygon &pp_new, double radius)const
+void CArea::OffsetWithLoops(const TPolyPolygon &pp, TPolyPolygon &pp_new, double inwards_value)const
 {
 	Clipper c;
 
-	printf("radius = %lf\n", radius);
+	bool inwards = (inwards_value > 0);
+	bool reverse = false;
+	double radius = -fabs(inwards_value);
 
-	bool reverse = (radius < 0);
+	if(inwards)
+	{
+		// add a large square on the outside, to be removed later
+		TPolygon p;
+		p.push_back(DoublePoint(-10000.0, -10000.0));
+		p.push_back(DoublePoint(-10000.0, 10000.0));
+		p.push_back(DoublePoint(10000.0, 10000.0));
+		p.push_back(DoublePoint(10000.0, -10000.0));
+		c.AddPolygon(p, ptSubject);
+	}
+	else
+	{
+		reverse = true;
+	}
 
 	for(unsigned int i = 0; i < pp.size(); i++)
 	{
 		const TPolygon& p = pp[i];
-		bool clockwise = IsPolygonClockwise(p);
-		//printf("polygon clockwise = %s\n", clockwise ? "CW" : "ACW");
 
 		std::list<TDoublePoint> pts;
 
@@ -554,33 +633,54 @@ void CArea::MakeObrounds(const TPolyPolygon &pp, TPolyPolygon &pp_new, double ra
 		{
 			if(reverse)
 			{
-				for(unsigned int j = p.size()-1; j > 1; j--)MakeObround(p[j], p[j-1], p[j-2], pts, radius);
-				MakeObround(p[1], p[0], p[p.size()-1], pts, radius);
-				MakeObround(p[0], p[p.size()-1], p[p.size()-2], pts, radius);
+				for(unsigned int j = p.size()-1; j > 1; j--)MakeLoop(p[j], p[j-1], p[j-2], pts, radius);
+				MakeLoop(p[1], p[0], p[p.size()-1], pts, radius);
+				MakeLoop(p[0], p[p.size()-1], p[p.size()-2], pts, radius);
 			}
 			else
 			{
-				MakeObround(p[p.size()-2], p[p.size()-1], p[0], pts, radius);
-				MakeObround(p[p.size()-1], p[0], p[1], pts, radius);
-				for(unsigned int j = 2; j < p.size(); j++)MakeObround(p[j-2], p[j-1], p[j], pts, radius);
+				MakeLoop(p[p.size()-2], p[p.size()-1], p[0], pts, radius);
+				MakeLoop(p[p.size()-1], p[0], p[1], pts, radius);
+				for(unsigned int j = 2; j < p.size(); j++)MakeLoop(p[j-2], p[j-1], p[j], pts, radius);
 			}
-		}
 
-		TPolygon loopy_polygon;
-		loopy_polygon.reserve(pts.size());
-		for(std::list<TDoublePoint>::iterator It = pts.begin(); It != pts.end(); It++)
-		{
-			loopy_polygon.push_back(*It);
+			TPolygon loopy_polygon;
+			loopy_polygon.reserve(pts.size());
+			for(std::list<TDoublePoint>::iterator It = pts.begin(); It != pts.end(); It++)
+			{
+				loopy_polygon.push_back(*It);
+			}
+			c.AddPolygon(loopy_polygon, ptSubject);
 		}
-		c.AddPolygon(loopy_polygon, ptSubject);
 	}
 
-	//typedef enum { ctIntersection, ctUnion, ctDifference, ctXor } TClipType;
-	c.ForceOrientation(false);
-	c.Execute(ctXor, pp_new, pftNonZero, pftNonZero);
+	//c.ForceOrientation(false);
+	c.Execute(ctUnion, pp_new, pftNonZero, pftNonZero);
+
+	if(inwards)
+	{
+		// remove the large square
+		pp_new.erase(pp_new.begin());
+	}
+	else
+	{
+		// reverse all the resulting polygons
+		TPolyPolygon copy = pp_new;
+		pp_new.clear();
+		pp_new.resize(copy.size());
+		for(unsigned int i = 0; i < copy.size(); i++)
+		{
+			const TPolygon& p = copy[i];
+			TPolygon p_new;
+			p_new.resize(p.size());
+			int size_minus_one = p.size() - 1;
+			for(unsigned int j = 0; j < p.size(); j++)p_new[j] = p[size_minus_one - j];
+			pp_new[i] = p_new;
+		}
+	}
 }
 
-void CArea::MakeObround(const TDoublePoint &pt0, const TDoublePoint &pt1, const TDoublePoint &pt2, std::list<TDoublePoint> &pts, double radius)const
+void CArea::MakeLoop(const TDoublePoint &pt0, const TDoublePoint &pt1, const TDoublePoint &pt2, std::list<TDoublePoint> &pts, double radius)const
 {
 	Point p0(pt0.X, pt0.Y);
 	Point p1(pt1.X, pt1.Y);
@@ -596,7 +696,7 @@ void CArea::MakeObround(const TDoublePoint &pt0, const TDoublePoint &pt1, const 
 
 	CVertex v0(0, p1 + right0 * radius, Point(0, 0));
 	CVertex v1(arc_dir, p1 + right1 * radius, p1);
-	CVertex v2(0, p1 + right1 * radius, Point(0, 0));
+	CVertex v2(0, p2 + right1 * radius, Point(0, 0));
 
 	AddVertex(pts, v1, &v0);
 	AddVertex(pts, v2, &v1);
@@ -817,4 +917,23 @@ void CArea::GetBox(CBox &box)
 		CCurve& curve = *It;
 		curve.GetBox(box);
 	}
+}
+
+void CArea::Reorder()
+{
+	// curves may have been added with wrong directions
+	// test all kurves to see which one are outsides and which are insides and 
+	// make sure outsides are anti-clockwise and insides are clockwise
+
+	// returns 0, if the curves are OK
+	// returns 1, if the curves are overlapping
+
+	CAreaOrderer ao;
+	for(std::list<CCurve>::iterator It = m_curves.begin(); It != m_curves.end(); It++)
+	{
+		CCurve& curve = *It;
+		ao.Insert(&curve);
+	}
+
+	*this = ao.ResultArea();
 }

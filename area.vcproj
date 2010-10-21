@@ -119,7 +119,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="&quot;$(BOOST_PYTHON_PATH)&quot;;$(PYTHON_INCLUDE);.\"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;AREA_EXPORTS;__BOOST_PYTHON_NO_LIB__;BOOST_PYTHON_STATIC_LIB=1;BOOST_LIB_DIAGNOSTIC"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;AREA_EXPORTS;__BOOST_PYTHON_NO_LIB__;BOOST_PYTHON_STATIC_LIB=1;BOOST_LIB_DIAGNOSTIC;"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -167,6 +167,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="copy C:\Users\Dan\libarea\Release\area.pyd C:\Users\Dan\HeeksCNC"
 			/>
 		</Configuration>
 	</Configurations>
@@ -184,6 +185,10 @@
 			</File>
 			<File
 				RelativePath=".\Area.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\AreaOrderer.cpp"
 				>
 			</File>
 			<File
@@ -258,6 +263,10 @@
 			</File>
 			<File
 				RelativePath=".\Area.h"
+				>
+			</File>
+			<File
+				RelativePath=".\AreaOrderer.h"
 				>
 			</File>
 			<File
