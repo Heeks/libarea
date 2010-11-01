@@ -85,11 +85,21 @@ eOverlapType CInnerCurves::GetOverlapType(const CCurve* c1, const CCurve* c2)con
 
 void CInnerCurves::GetArea(CArea &area, bool outside)
 {
+	std::list<CInnerCurves*> do_after;
+
 	for(std::set<CInnerCurves*>::iterator It = m_inner_curves.begin(); It != m_inner_curves.end(); It++)
 	{
 		CInnerCurves* c = *It;
 		area.m_curves.push_back(*c->m_curve);
 		if(!outside)area.m_curves.back().Reverse();
+
+		if(outside)c->GetArea(area, !outside);
+		else do_after.push_back(c);
+	}
+
+	for(std::list<CInnerCurves*>::iterator It = do_after.begin(); It != do_after.end(); It++)
+	{
+		CInnerCurves* c = *It;
 		c->GetArea(area, !outside);
 	}
 }

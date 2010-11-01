@@ -88,11 +88,6 @@ static CVertex LastVertex(const CCurve& curve)
 	return curve.m_vertices.back();
 }
 
-static void set_round_corner_factor(double factor)
-{
-	CArea::m_round_corners_factor = factor;
-}
-
 static void set_units(double units)
 {
 	CArea::m_units = units;
@@ -101,6 +96,29 @@ static void set_units(double units)
 static double get_units()
 {
 	return CArea::m_units;
+}
+
+static bool holes_linked()
+{
+#ifdef CLIPPER_NOT_KBOOL
+	return false;
+#else
+	return true;
+#endif
+}
+
+boost::python::list MakePocketToolpath(const CArea& a, double tool_radius, double extra_offset, double stepover, bool from_center, bool use_zig_zag, double zig_angle)
+{
+	std::list<CCurve> toolpath;
+
+	CAreaPocketParams params(tool_radius, extra_offset, stepover, from_center, use_zig_zag, zig_angle);
+	a.MakePocketToolpath(toolpath, params);
+
+	boost::python::list clist;
+	BOOST_FOREACH(const CCurve& c, toolpath) {
+		clist.append(c);
+    }
+	return clist;
 }
 
 BOOST_PYTHON_MODULE(area) {
@@ -166,9 +184,10 @@ BOOST_PYTHON_MODULE(area) {
 		.def("NearestPoint", &CArea::NearestPoint)
 		.def("GetBox", &CArea::GetBox)
 		.def("Reorder", &CArea::Reorder)
+		.def("MakePocketToolpath", &MakePocketToolpath)
     ;
 
-    bp::def("set_round_corner_factor", set_round_corner_factor);
     bp::def("set_units", set_units);
     bp::def("get_units", get_units);
+    bp::def("holes_linked", holes_linked);
 }
