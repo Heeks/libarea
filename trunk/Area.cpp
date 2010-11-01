@@ -3,19 +3,14 @@
 // written by Dan Heeks, February 6th 2009, license: GPL version 3 http://www.gnu.org/licenses/gpl-3.0.txt
 
 #include "Area.h"
-#include "kbool/include/_lnk_itr.h"
-#include "kbool/include/booleng.h"
 #include "Circle.h"
 #include "Arc.h"
 #include "AreaOrderer.h"
 
-#ifdef CLIPPER_NOT_KBOOL
-#include "clipper.hpp"
-using namespace clipper;
-#endif
-
 const Point operator*(const double &d, const Point &p){ return p * d;}
 double Point::tolerance = 0.001;
+
+static const double PI = 3.1415926535897932;
 
 double Point::length()const
 {
@@ -335,12 +330,12 @@ double IncludedAngle(const Point& v0, const Point& v1, int dir) {
 	double inc_ang = v0 * v1;
 	if(inc_ang > 1. - 1.0e-10) return 0;
 	if(inc_ang < -1. + 1.0e-10)
-		inc_ang = M_PI;  
+		inc_ang = PI;  
 	else {									// dot product,   v1 . v2  =  cos ang
 		if(inc_ang > 1.0) inc_ang = 1.0;
 		inc_ang = acos(inc_ang);									// 0 to pi radians
 
-		if(dir * (v0 ^ v1) < 0) inc_ang = 2 * M_PI - inc_ang ;		// cp
+		if(dir * (v0 ^ v1) < 0) inc_ang = 2 * PI - inc_ang ;		// cp
 	}
 	return dir * inc_ang;
 }
@@ -377,520 +372,13 @@ double SpanPtr::GetArea()const
 	return 0.5 * (m_v.m_p.x - m_p.x) * (m_p.y + m_v.m_p.y);
 }
 
-double CArea::m_round_corners_factor = 1.5;
 double CArea::m_accuracy = 0.01;
 double CArea::m_units = 1.0;
-
-#ifdef CLIPPER_NOT_KBOOL
-#else
-void CArea::ArmBoolEng( Bool_Engine* booleng )
-{
-    // set some global vals to arm the boolean engine
-    double DGRID = 1000;  // round coordinate X or Y value in calculations to this
-    double MARGE = 0.001;   // snap with in this range points to lines in the intersection routines
-                          // should always be > DGRID  a  MARGE >= 10*DGRID is oke
-                          // this is also used to remove small segments and to decide when
-                          // two segments are in line.
-    double CORRECTIONFACTOR = 500.0;  // correct the polygons by this number
-	double CORRECTIONABER   = CArea::m_accuracy;    // the accuracy for the rounded shapes used in correction
-    double ROUNDFACTOR      = 1.5;    // when will we round the correction shape to a circle
-    double SMOOTHABER       = 10.0;   // accuracy when smoothing a polygon
-    double MAXLINEMERGE     = 1000.0; // leave as is, segments of this length in smoothen
- 
-
-    // DGRID is only meant to make fractional parts of input data which 
-    // are doubles, part of the integers used in vertexes within the boolean algorithm.
-    // Within the algorithm all input data is multiplied with DGRID
-    
-    // space for extra intersection inside the boolean algorithms
-    // only change this if there are problems
-    int GRID =10000;
-
-    booleng->SetMarge( MARGE );
-    booleng->SetGrid( GRID );
-    booleng->SetDGrid( DGRID );
-    booleng->SetCorrectionFactor( CORRECTIONFACTOR );
-    booleng->SetCorrectionAber( CORRECTIONABER );
-    booleng->SetSmoothAber( SMOOTHABER );
-    booleng->SetMaxlinemerge( MAXLINEMERGE );
-    booleng->SetRoundfactor( ROUNDFACTOR );
-}
-#endif
 
 void CArea::append(const CCurve& curve)
 {
 	m_curves.push_back(curve);
 }
-
-void CArea::Subtract(const CArea& a2)
-{
-#ifdef CLIPPER_NOT_KBOOL
-	Clipper c;
-	TPolyPolygon pp1, pp2;
-	MakePolyPoly(pp1);
-	a2.MakePolyPoly(pp2);
-	c.AddPolyPolygon(pp1, ptSubject);
-	c.AddPolyPolygon(pp2, ptClip);
-	TPolyPolygon solution;
-	c.Execute(ctDifference, solution);
-	SetFromResult(solution);
-#else
-	Bool_Engine* booleng = new Bool_Engine();
-	ArmBoolEng( booleng );
-	MakeGroup( booleng, true );
-	a2.MakeGroup( booleng, false );
-	booleng->Do_Operation(BOOL_A_SUB_B);
-	SetFromResult( booleng );
-#endif
-}
-
-void CArea::Intersect(const CArea& a2)
-{
-#ifdef CLIPPER_NOT_KBOOL
-	Clipper c;
-	TPolyPolygon pp1, pp2;
-	MakePolyPoly(pp1);
-	a2.MakePolyPoly(pp2);
-	c.AddPolyPolygon(pp1, ptSubject);
-	c.AddPolyPolygon(pp2, ptClip);
-	TPolyPolygon solution;
-	c.Execute(ctIntersection, solution);
-	SetFromResult(solution);
-#else
-	Bool_Engine* booleng = new Bool_Engine();
-	ArmBoolEng( booleng );
-	MakeGroup( booleng, true );
-	a2.MakeGroup( booleng, false );
-	booleng->Do_Operation(BOOL_AND);
-	SetFromResult( booleng );
-#endif
-}
-
-void CArea::Union(const CArea& a2)
-{
-#ifdef CLIPPER_NOT_KBOOL
-	Clipper c;
-	TPolyPolygon pp1, pp2;
-	MakePolyPoly(pp1);
-	a2.MakePolyPoly(pp2);
-	c.AddPolyPolygon(pp1, ptSubject);
-	c.AddPolyPolygon(pp2, ptClip);
-	TPolyPolygon solution;
-	c.Execute(ctUnion, solution);
-	SetFromResult(solution);
-#else
-	Bool_Engine* booleng = new Bool_Engine();
-	ArmBoolEng( booleng );
-	MakeGroup( booleng, true );
-	a2.MakeGroup( booleng, false );
-	booleng->Do_Operation(BOOL_OR);
-	SetFromResult( booleng );
-#endif
-}
-
-void CArea::Offset(double inwards_value)
-{
-#ifdef CLIPPER_NOT_KBOOL
-	TPolyPolygon pp, pp2;
-	MakePolyPoly(pp, false);
-	OffsetWithLoops(pp, pp2, inwards_value);
-	SetFromResult(pp2, false);
-#else
-	Bool_Engine* booleng = new Bool_Engine();
-	ArmBoolEng( booleng );
-	MakeGroup( booleng, true);
-	booleng->SetRoundfactor(m_round_corners_factor);
-	booleng->SetCorrectionFactor( -inwards_value * m_units );
-	booleng->Do_Operation(BOOL_CORRECTION);
-	SetFromResult( booleng );
-#endif
-}
-
-#ifdef CLIPPER_NOT_KBOOL
-void CArea::AddVertex(std::list<TDoublePoint> &pts, const CVertex& vertex, const CVertex* prev_vertex)const
-{
-	if(vertex.m_type == 0 || prev_vertex == NULL)
-	{
-		pts.push_back(DoublePoint(vertex.m_p.x * m_units, vertex.m_p.y * m_units));
-	}
-	else
-	{
-		double phi,dphi,dx,dy;
-		int Segments;
-		int i;
-		double ang1,ang2,phit;
-
-		dx = (prev_vertex->m_p.x - vertex.m_c.x) * m_units;
-		dy = (prev_vertex->m_p.y - vertex.m_c.y) * m_units;
-
-		ang1=atan2(dy,dx);
-		if (ang1<0) ang1+=2.0*M_PI;
-		dx = (vertex.m_p.x - vertex.m_c.x) * m_units;
-		dy = (vertex.m_p.y - vertex.m_c.y) * m_units;
-		ang2=atan2(dy,dx);
-		if (ang2<0) ang2+=2.0*M_PI;
-
-		if (vertex.m_type == -1)
-		{ //clockwise
-			if (ang2 > ang1)
-				phit=2.0*M_PI-ang2+ ang1;
-			else
-				phit=ang1-ang2;
-		}
-		else
-		{ //counter_clockwise
-			if (ang1 > ang2)
-				phit=-(2.0*M_PI-ang1+ ang2);
-			else
-				phit=-(ang2-ang1);
-		}
-
-		//what is the delta phi to get an accurancy of aber
-		double radius = sqrt(dx*dx + dy*dy);
-		dphi=2*acos((radius-m_accuracy)/radius);
-
-		//set the number of segments
-		if (phit > 0)
-			Segments=(int)ceil(phit/dphi);
-		else
-			Segments=(int)ceil(-phit/dphi);
-
-		if (Segments <= 1)
-			Segments=1;
-		if (Segments > 100)
-			Segments=100;
-
-		dphi=phit/(Segments);
-
-		double px = prev_vertex->m_p.x * m_units;
-		double py = prev_vertex->m_p.y * m_units;
-
-		for (i=1; i<=Segments; i++)
-		{
-			dx = px - vertex.m_c.x * m_units;
-			dy = py - vertex.m_c.y * m_units;
-			phi=atan2(dy,dx);
-
-			double nx = vertex.m_c.x * m_units + radius * cos(phi-dphi);
-			double ny = vertex.m_c.y * m_units + radius * sin(phi-dphi);
-
-			pts.push_back(DoublePoint(nx, ny));
-
-			px = nx;
-			py = ny;
-		}
-	}
-}
-
-bool IsPolygonClockwise(const TPolygon& p)
-{
-	double area = 0.0;
-	unsigned int s = p.size();
-	for(unsigned int i = 0; i<s; i++)
-	{
-		int im1 = i-1;
-		if(im1 < 0)im1 += s;
-
-		const TDoublePoint &pt0 = p[im1];
-		const TDoublePoint &pt1 = p[i];
-
-		area += 0.5 * (pt1.X - pt0.X) * (pt0.Y + pt1.Y);
-	}
-
-	return area > 0.0;
-}
-
-void CArea::OffsetWithLoops(const TPolyPolygon &pp, TPolyPolygon &pp_new, double inwards_value)const
-{
-	Clipper c;
-
-	bool inwards = (inwards_value > 0);
-	bool reverse = false;
-	double radius = -fabs(inwards_value);
-
-	if(inwards)
-	{
-		// add a large square on the outside, to be removed later
-		TPolygon p;
-		p.push_back(DoublePoint(-10000.0, -10000.0));
-		p.push_back(DoublePoint(-10000.0, 10000.0));
-		p.push_back(DoublePoint(10000.0, 10000.0));
-		p.push_back(DoublePoint(10000.0, -10000.0));
-		c.AddPolygon(p, ptSubject);
-	}
-	else
-	{
-		reverse = true;
-	}
-
-	for(unsigned int i = 0; i < pp.size(); i++)
-	{
-		const TPolygon& p = pp[i];
-
-		std::list<TDoublePoint> pts;
-
-		if(p.size() > 2)
-		{
-			if(reverse)
-			{
-				for(unsigned int j = p.size()-1; j > 1; j--)MakeLoop(p[j], p[j-1], p[j-2], pts, radius);
-				MakeLoop(p[1], p[0], p[p.size()-1], pts, radius);
-				MakeLoop(p[0], p[p.size()-1], p[p.size()-2], pts, radius);
-			}
-			else
-			{
-				MakeLoop(p[p.size()-2], p[p.size()-1], p[0], pts, radius);
-				MakeLoop(p[p.size()-1], p[0], p[1], pts, radius);
-				for(unsigned int j = 2; j < p.size(); j++)MakeLoop(p[j-2], p[j-1], p[j], pts, radius);
-			}
-
-			TPolygon loopy_polygon;
-			loopy_polygon.reserve(pts.size());
-			for(std::list<TDoublePoint>::iterator It = pts.begin(); It != pts.end(); It++)
-			{
-				loopy_polygon.push_back(*It);
-			}
-			c.AddPolygon(loopy_polygon, ptSubject);
-		}
-	}
-
-	//c.ForceOrientation(false);
-	c.Execute(ctUnion, pp_new, pftNonZero, pftNonZero);
-
-	if(inwards)
-	{
-		// remove the large square
-		pp_new.erase(pp_new.begin());
-	}
-	else
-	{
-		// reverse all the resulting polygons
-		TPolyPolygon copy = pp_new;
-		pp_new.clear();
-		pp_new.resize(copy.size());
-		for(unsigned int i = 0; i < copy.size(); i++)
-		{
-			const TPolygon& p = copy[i];
-			TPolygon p_new;
-			p_new.resize(p.size());
-			int size_minus_one = p.size() - 1;
-			for(unsigned int j = 0; j < p.size(); j++)p_new[j] = p[size_minus_one - j];
-			pp_new[i] = p_new;
-		}
-	}
-}
-
-void CArea::MakeLoop(const TDoublePoint &pt0, const TDoublePoint &pt1, const TDoublePoint &pt2, std::list<TDoublePoint> &pts, double radius)const
-{
-	Point p0(pt0.X, pt0.Y);
-	Point p1(pt1.X, pt1.Y);
-	Point p2(pt2.X, pt2.Y);
-	Point forward0 = p1 - p0;
-	Point right0(forward0.y, -forward0.x);
-	right0.normalize();
-	Point forward1 = p2 - p1;
-	Point right1(forward1.y, -forward1.x);
-	right1.normalize();
-
-	int arc_dir = (radius > 0) ? 1 : -1;
-
-	CVertex v0(0, p1 + right0 * radius, Point(0, 0));
-	CVertex v1(arc_dir, p1 + right1 * radius, p1);
-	CVertex v2(0, p2 + right1 * radius, Point(0, 0));
-
-	AddVertex(pts, v1, &v0);
-	AddVertex(pts, v2, &v1);
-}
-
-void CArea::MakePolyPoly( TPolyPolygon &pp, bool reverse )const{
-	pp.clear();
-
-	for(std::list<CCurve>::const_iterator It = m_curves.begin(); It != m_curves.end(); It++)
-	{
-		std::list<TDoublePoint> pts;
-		const CCurve& curve = *It;
-		const CVertex* prev_vertex = NULL;
-		for(std::list<CVertex>::const_iterator It2 = curve.m_vertices.begin(); It2 != curve.m_vertices.end(); It2++)
-		{
-			const CVertex& vertex = *It2;
-			if(prev_vertex)AddVertex(pts, vertex, prev_vertex);
-			prev_vertex = &vertex;
-		}
-
-		TPolygon p;
-		p.resize(pts.size());
-		if(reverse)
-		{
-			unsigned int i = pts.size() - 1;// clipper wants them the opposite way to CArea
-			for(std::list<TDoublePoint>::iterator It = pts.begin(); It != pts.end(); It++, i--)p[i] = *It;
-		}
-		else
-		{
-			unsigned int i = 0;
-			for(std::list<TDoublePoint>::iterator It = pts.begin(); It != pts.end(); It++, i++)p[i] = *It;
-		}
-
-		pp.push_back(p);
-	}
-}
-
-void CArea::SetFromResult( const TPolyPolygon& pp, bool reverse )
-{
-	// delete existing geometry
-	m_curves.clear();
-
-	for(unsigned int i = 0; i < pp.size(); i++)
-	{
-		const TPolygon& p = pp[i];
-
-		m_curves.push_back(CCurve());
-		CCurve &curve = m_curves.back();
-		for(unsigned int j = 0; j < p.size(); j++)
-		{
-			const TDoublePoint &pt = p[j];
-			CVertex vertex(0, Point(pt.X / m_units, pt.Y / m_units), Point(0.0, 0.0));
-			if(reverse)curve.m_vertices.push_front(vertex);
-			else curve.m_vertices.push_back(vertex);
-        }
-		// make a copy of the first point at the end
-		if(reverse)curve.m_vertices.push_front(curve.m_vertices.front());
-		else curve.m_vertices.push_back(curve.m_vertices.front());
-
-		curve.FitArcs();
-    }
-}
-
-#else
-void CArea::AddVertex(Bool_Engine* booleng, const CVertex& vertex, const CVertex* prev_vertex)const
-{
-	if(vertex.m_type == 0 || prev_vertex == NULL)
-	{
-		booleng->AddPoint(vertex.m_p.x * m_units, vertex.m_p.y * m_units, vertex.m_user_data);
-	}
-	else
-	{
-		double phi,dphi,dx,dy;
-		int Segments;
-		int i;
-		double ang1,ang2,phit;
-
-		dx = (prev_vertex->m_p.x - vertex.m_c.x) * m_units;
-		dy = (prev_vertex->m_p.y - vertex.m_c.y) * m_units;
-
-		ang1=atan2(dy,dx);
-		if (ang1<0) ang1+=2.0*M_PI;
-		dx = (vertex.m_p.x - vertex.m_c.x) * m_units;
-		dy = (vertex.m_p.y - vertex.m_c.y) * m_units;
-		ang2=atan2(dy,dx);
-		if (ang2<0) ang2+=2.0*M_PI;
-
-		if (vertex.m_type == -1)
-		{ //clockwise
-			if (ang2 > ang1)
-				phit=2.0*M_PI-ang2+ ang1;
-			else
-				phit=ang1-ang2;
-		}
-		else
-		{ //counter_clockwise
-			if (ang1 > ang2)
-				phit=-(2.0*M_PI-ang1+ ang2);
-			else
-				phit=-(ang2-ang1);
-		}
-
-		//what is the delta phi to get an accurancy of aber
-		double radius = sqrt(dx*dx + dy*dy);
-		dphi=2*acos((radius-booleng->GetCorrectionAber())/radius);
-
-		//set the number of segments
-		if (phit > 0)
-			Segments=(int)ceil(phit/dphi);
-		else
-			Segments=(int)ceil(-phit/dphi);
-
-		if (Segments <= 1)
-			Segments=1;
-		if (Segments > 100)
-			Segments=100;
-
-		dphi=phit/(Segments);
-
-		double px = prev_vertex->m_p.x * m_units;
-		double py = prev_vertex->m_p.y * m_units;
-
-		for (i=1; i<=Segments; i++)
-		{
-			dx = px - vertex.m_c.x * m_units;
-			dy = py - vertex.m_c.y * m_units;
-			phi=atan2(dy,dx);
-
-			double nx = vertex.m_c.x * m_units + radius * cos(phi-dphi);
-			double ny = vertex.m_c.y * m_units + radius * sin(phi-dphi);
-
-			booleng->AddPoint(nx, ny, vertex.m_user_data);
-
-			px = nx;
-			py = ny;
-		}
-	}
-}
-
-void CArea::MakeGroup( Bool_Engine* booleng, bool a_not_b )const
-{
-	booleng->SetLinkHoles(true);
-
-		booleng->StartPolygonAdd(a_not_b ? GROUP_A:GROUP_B);
-		bool first_curve = true;
-		const CVertex* last_vertex = NULL;
-
-	for(std::list<CCurve>::const_iterator It = m_curves.begin(); It != m_curves.end(); It++)
-	{
-		const CCurve& curve = *It;
-		const CVertex* prev_vertex = NULL;
-		for(std::list<CVertex>::const_iterator It2 = curve.m_vertices.begin(); It2 != curve.m_vertices.end(); It2++)
-		{
-			const CVertex& vertex = *It2;
-			AddVertex(booleng, vertex, prev_vertex);
-			prev_vertex = &vertex;
-			if(first_curve)last_vertex = &vertex;
-		}
-
-				if(!first_curve)
-				{
-				booleng->AddPoint(last_vertex->m_p.x * m_units, last_vertex->m_p.y * m_units, 0);
-			}
-
-				first_curve = false;
-	}
-		booleng->EndPolygonAdd();
-	
-}
-
-void CArea::SetFromResult( Bool_Engine* booleng )
-{
-	// delete existing geometry
-	m_curves.clear();
-
-	while ( booleng->StartPolygonGet() )
-    {
-		m_curves.push_back(CCurve());
-		CCurve &curve = m_curves.back();
-
-        // foreach point in the polygon
-        while ( booleng->PolygonHasMorePoints() )
-        {
-			CVertex vertex(0, Point(booleng->GetPolygonXPoint() / m_units, booleng->GetPolygonYPoint() / m_units), Point(0.0, 0.0), booleng->GetPolygonPointUserData());
-
-			curve.m_vertices.push_back(vertex);
-        }
-		curve.m_vertices.push_back(curve.m_vertices.front()); // make a copy of the first point at the end
-
-		curve.FitArcs();
-        booleng->EndPolygonGet();
-    }
-}
-#endif
 
 void CArea::FitArcs(){
 	for(std::list<CCurve>::iterator It = m_curves.begin(); It != m_curves.end(); It++)
@@ -944,4 +432,323 @@ void CArea::Reorder()
 	}
 
 	*this = ao.ResultArea();
+}
+
+static double stepover_for_pocket = 0.0;
+static std::list<CCurve> curve_list_for_zigs;
+static bool rightward_for_zigs = true;
+static double sin_angle_for_zigs = 0.0;
+static double cos_angle_for_zigs = 0.0;
+static double sin_minus_angle_for_zigs = 0.0;
+static double cos_minus_angle_for_zigs = 0.0;
+static double one_over_units = 0.0;
+
+static Point rotated_point(const Point &p)
+{
+	return Point(p.x * cos_angle_for_zigs - p.y * sin_angle_for_zigs, p.x * sin_angle_for_zigs + p.y * cos_angle_for_zigs);
+}
+    
+static Point unrotated_point(const Point &p)
+{
+    return Point(p.x * cos_minus_angle_for_zigs - p.y * sin_minus_angle_for_zigs, p.x * sin_minus_angle_for_zigs + p.y * cos_minus_angle_for_zigs);
+}
+
+static CVertex rotated_vertex(const CVertex &v)
+{
+	if(v.m_type)
+	{
+		return CVertex(v.m_type, rotated_point(v.m_p), rotated_point(v.m_c));
+	}
+    return CVertex(v.m_type, rotated_point(v.m_p), Point(0, 0));
+}
+
+static CVertex unrotated_vertex(const CVertex &v)
+{
+	if(v.m_type)
+	{
+		return CVertex(v.m_type, unrotated_point(v.m_p), unrotated_point(v.m_c));
+	}
+	return CVertex(v.m_type, unrotated_point(v.m_p), Point(0, 0));
+}
+
+static void rotate_area(CArea &a)
+{
+	for(std::list<CCurve>::iterator It = a.m_curves.begin(); It != a.m_curves.end(); It++)
+	{
+		CCurve& curve = *It;
+		for(std::list<CVertex>::iterator CIt = curve.m_vertices.begin(); CIt != curve.m_vertices.end(); CIt++)
+		{
+			CVertex& vt = *CIt;
+			vt = rotated_vertex(vt);
+		}
+	}
+}
+
+static void make_zig_curve(const CCurve& input_curve, double y0, double y)
+{
+	CCurve curve(input_curve);
+
+    if(rightward_for_zigs)
+        curve.Reverse();
+
+    // find a high point to start looking from
+    Point high_point;
+	bool high_point_found = false;
+
+	for(std::list<CVertex>::const_iterator VIt = curve.m_vertices.begin(); VIt != curve.m_vertices.end(); VIt++)
+	{
+		const CVertex& vertex = *VIt;
+        if(!high_point_found)
+		{
+			high_point = vertex.m_p;
+			high_point_found = true;
+		}
+		else if(vertex.m_p.y > high_point.y)
+		{
+			// use this as the new high point
+			high_point = vertex.m_p;
+		}
+        else if(fabs(vertex.m_p.y - high_point.y) < 0.002 * one_over_units)
+		{
+			// equal high point
+			if(rightward_for_zigs)
+			{
+                // use the furthest left point
+				if(vertex.m_p.x < high_point.x)
+					high_point = vertex.m_p;
+			}
+            else
+			{
+				// use the furthest right point
+				if(vertex.m_p.x > high_point.x)
+                    high_point = vertex.m_p;
+			}
+		}
+	}
+
+	if(!high_point_found)
+		return;
+        
+    CCurve zig;
+    
+    high_point_found = false;
+    bool zig_started = false;
+    bool zag_found = false;
+    
+	for(int i = 0; i < 2; i++)
+	{
+		// process the curve twice because we don't know where it will start
+        const Point *prev_p = NULL;
+
+		for(std::list<CVertex>::const_iterator VIt = curve.m_vertices.begin(); VIt != curve.m_vertices.end(); VIt++)
+		{
+			const CVertex& vertex = *VIt;
+			if(zag_found)
+				break;
+
+            if(prev_p)
+			{
+				if(zig_started)
+				{
+					zig.m_vertices.push_back(unrotated_vertex(vertex));
+                    if(fabs(vertex.m_p.y - y) < 0.002 * one_over_units)
+					{
+						zag_found = true;
+						break;
+					}
+				}
+				else if(high_point_found)
+				{
+                    if(fabs(vertex.m_p.y - y0) < 0.002 * one_over_units)
+					{
+						if(zig_started)
+						{
+							zig.m_vertices.push_back(unrotated_vertex(vertex));
+						}
+                        else if(fabs(prev_p->y - y0) < 0.002 * one_over_units && (vertex.m_type == 0))
+						{
+                            zig.m_vertices.push_back(CVertex(0, unrotated_point(*prev_p), Point(0, 0)));
+                            zig.m_vertices.push_back(unrotated_vertex(vertex));
+                            zig_started = true;
+						}
+					}
+				}
+                else if((vertex.m_p.x == high_point.x) && (vertex.m_p.y == high_point.y))
+				{
+					high_point_found = true;
+				}
+			}
+            prev_p = &(vertex.m_p);
+		}
+	}
+        
+    if(zig_started)
+		curve_list_for_zigs.push_back(zig);
+}
+
+void make_zig(const CArea &a, double y0, double y)
+{
+	for(std::list<CCurve>::const_iterator It = a.m_curves.begin(); It != a.m_curves.end(); It++)
+	{
+		const CCurve &curve = *It;
+		make_zig_curve(curve, y0, y);
+	}
+}
+        
+std::list< std::list<CCurve> > reorder_zig_list_list;
+        
+void add_reorder_zig(const CCurve &curve)
+{
+    // look in existing lists
+    const Point& s = curve.m_vertices.front().m_p;
+
+	for(std::list< std::list<CCurve> >::iterator It = reorder_zig_list_list.begin(); It != reorder_zig_list_list.end(); It++)
+	{
+		std::list<CCurve> &curve_list = *It;
+		const CCurve& last_curve = curve_list.back();
+        const Point& e = last_curve.m_vertices.back().m_p;
+        if((fabs(s.x - e.x) < (0.002 * one_over_units)) && (fabs(s.y - e.y) < (0.002 * one_over_units)))
+		{
+            curve_list.push_back(curve);
+			return;
+		}
+	}
+        
+    // else add a new list
+    std::list<CCurve> curve_list;
+    curve_list.push_back(curve);
+    reorder_zig_list_list.push_back(curve_list);
+}
+
+void reorder_zigs()
+{
+    reorder_zig_list_list.clear();
+	for(std::list<CCurve>::const_iterator It = curve_list_for_zigs.begin(); It != curve_list_for_zigs.end(); It++)
+	{
+		const CCurve &curve = *It;
+        add_reorder_zig(curve);
+	}
+        
+	curve_list_for_zigs.clear();
+
+	for(std::list< std::list<CCurve> >::iterator It = reorder_zig_list_list.begin(); It != reorder_zig_list_list.end(); It++)
+	{
+		std::list<CCurve> &curve_list = *It;
+		for(std::list<CCurve>::const_iterator It = curve_list.begin(); It != curve_list.end(); It++)
+		{
+			const CCurve &curve = *It;
+            curve_list_for_zigs.push_back(curve);
+		}
+	}
+}
+
+static void zigzag(const CArea &input_a)
+{
+	if(input_a.m_curves.size() == 0)
+		return;
+    
+    one_over_units = 1 / CArea::m_units;
+    
+	CArea a(input_a);
+    rotate_area(a);
+    
+    CBox b;
+	a.GetBox(b);
+    
+    double x0 = b.MinX() - 1.0;
+    double x1 = b.MaxX() + 1.0;
+
+    double height = b.MaxY() - b.MinY();
+    int num_steps = int(height / stepover_for_pocket + 1);
+    double y = b.MinY() + 0.1 * one_over_units;
+    Point null_point(0, 0);
+    rightward_for_zigs = true;
+	curve_list_for_zigs.clear();
+    
+    for(int i = 0; i<num_steps; i++)
+	{
+        double y0 = y;
+        y = y + stepover_for_pocket;
+        Point p0(x0, y0);
+        Point p1(x0, y);
+        Point p2(x1, y);
+        Point p3(x1, y0);
+        CCurve c;
+        c.m_vertices.push_back(CVertex(0, p0, null_point, 0));
+        c.m_vertices.push_back(CVertex(0, p1, null_point, 0));
+        c.m_vertices.push_back(CVertex(0, p2, null_point, 1));
+        c.m_vertices.push_back(CVertex(0, p3, null_point, 0));
+        c.m_vertices.push_back(CVertex(0, p0, null_point, 1));
+        CArea a2;
+		a2.m_curves.push_back(c);
+        a2.Intersect(a);
+        make_zig(a2, y0, y);
+        rightward_for_zigs = !rightward_for_zigs;
+	}
+        
+    reorder_zigs();
+}
+
+void CArea::MakePocketToolpath(std::list<CCurve> &curve_list, const CAreaPocketParams &params)const
+{
+	double radians_angle = params.zig_angle * PI / 180;
+	sin_angle_for_zigs = sin(-radians_angle);
+	cos_angle_for_zigs = cos(-radians_angle);
+	sin_minus_angle_for_zigs = sin(radians_angle);
+	cos_minus_angle_for_zigs = cos(radians_angle);
+	stepover_for_pocket = params.stepover;
+
+	CArea a_offset = *this;
+	double current_offset = params.tool_radius + params.extra_offset;
+	a_offset.Offset(current_offset);
+        
+    if(params.use_zig_zag)
+	{
+		zigzag(a_offset);
+		curve_list = curve_list_for_zigs;
+	}
+	else
+	{
+		std::list<CArea> m_areas;
+		a_offset.Split(m_areas);
+
+		for(std::list<CArea>::iterator It = m_areas.begin(); It != m_areas.end(); It++)
+		{
+			CArea &a2 = *It;
+
+			curve_list.push_back(CCurve());
+			a2.MakeOnePocketCurve(curve_list.back(), params);
+		}
+	}
+}
+
+void CArea::Split(std::list<CArea> &m_areas)
+{
+	if(HolesLinked())
+	{
+		for(std::list<CCurve>::iterator It = m_curves.begin(); It != m_curves.end(); It++)
+		{
+			CCurve& curve = *It;
+			m_areas.push_back(CArea());
+			m_areas.back().m_curves.push_back(curve);
+		}
+	}
+	else
+	{
+		Reorder();
+		for(std::list<CCurve>::iterator It = m_curves.begin(); It != m_curves.end(); It++)
+		{
+			CCurve& curve = *It;
+			if(curve.IsClockwise())
+			{
+				if(m_areas.size() > 0)
+					m_areas.back().m_curves.push_back(curve);
+			}
+			else
+			{
+				m_areas.push_back(CArea());
+				m_areas.back().m_curves.push_back(curve);
+			}
+		}
+	}
 }

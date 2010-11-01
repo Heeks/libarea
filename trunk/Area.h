@@ -11,11 +11,6 @@
 #include "Point.h"
 #include "Box.h"
 
-#ifdef CLIPPER_NOT_KBOOL
-#include "clipper.hpp"
-#endif
-
-class Bool_Engine;
 class Arc;
 
 class CVertex
@@ -62,36 +57,31 @@ public:
 	bool IsClockwise()const{return GetArea()>0;}
 };
 
-enum resultType{
-	rtAll,
-	rtClockwise,
-	rtAntiClockwise,
+struct CAreaPocketParams
+{
+	double tool_radius;
+	double extra_offset;
+	double stepover;
+	bool from_center;
+	bool use_zig_zag;
+	double zig_angle;
+	CAreaPocketParams(double Tool_radius, double Extra_offset, double Stepover, bool From_center, bool Use_zig_zag, double Zig_angle)
+	{
+		tool_radius = Tool_radius;
+		extra_offset = Extra_offset;
+		stepover = Stepover;
+		from_center = From_center;
+		use_zig_zag = Use_zig_zag;
+		zig_angle = Zig_angle;
+	}
 };
 
 class CArea
 {
-#ifdef CLIPPER_NOT_KBOOL
-	void MakePolyPoly( clipper::TPolyPolygon &pp, bool reverse = true )const;
-	void SetFromResult( const clipper::TPolyPolygon& pp, bool reverse = true );
-	void AddVertex(std::list<clipper::TDoublePoint> &pts, const CVertex& vertex, const CVertex* prev_vertex = NULL)const;
-	void OffsetWithLoops(const clipper::TPolyPolygon &pp, clipper::TPolyPolygon &pp_new, double inwards_value)const;
-	void MakeLoop(const clipper::TDoublePoint &pt0, const clipper::TDoublePoint &pt1, const clipper::TDoublePoint &pt2, std::list<clipper::TDoublePoint> &pts, double radius)const;
-#else
-	void MakeGroup( Bool_Engine* booleng, bool a_not_b )const;
-	void SetFromResult( Bool_Engine* booleng );
-	void AddVertex(Bool_Engine* booleng, const CVertex& vertex, const CVertex* prev_vertex = NULL)const;
-#endif
-
 public:
 	std::list<CCurve> m_curves;
-	static double m_round_corners_factor; // 1.0 for round 90 degree corners, 1.5 for square 90 degree corners
 	static double m_accuracy;
 	static double m_units; // 1.0 for mm, 25.4 for inches. All points are multiplied by this before going to the engine
-
-#ifdef CLIPPER_NOT_KBOOL
-#else
-	static void ArmBoolEng( Bool_Engine* booleng );
-#endif
 
 	void append(const CCurve& curve);
 	void Subtract(const CArea& a2);
@@ -103,6 +93,10 @@ public:
 	Point NearestPoint(const Point& p);
 	void GetBox(CBox &box);
 	void Reorder();
+	void MakePocketToolpath(std::list<CCurve> &toolpath, const CAreaPocketParams &params)const;
+	void MakeOnePocketCurve(CCurve& curve, const CAreaPocketParams &params)const;
+	bool HolesLinked();
+	void Split(std::list<CArea> &m_areas);
 };
 
 #endif // #define AREA_HEADER

@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="area"
-	ProjectGUID="{25834132-FB6C-41C4-BFB2-F7A964E06153}"
+	Name="area clipper"
+	ProjectGUID="{35834132-FB6C-41C4-BFB2-F7A964E06153}"
 	RootNamespace="area"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
@@ -188,7 +188,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\AreaBoolean.cpp"
+				RelativePath=".\AreaClipper.cpp"
 				>
 			</File>
 			<File
@@ -200,7 +200,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\kbool\src\booleng.cpp"
+				RelativePath=".\clipper.cpp"
 				>
 			</File>
 			<File
@@ -208,43 +208,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\kbool\src\graph.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\kbool\src\graphlst.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\kbool\src\instonly.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\kbool\src\line.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\kbool\src\link.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\kbool\src\lpoint.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\kbool\src\node.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\PythonStuff.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\kbool\src\record.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\kbool\src\scanbeam.cpp"
 				>
 			</File>
 		</Filter>
@@ -254,11 +218,7 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\kbool\include\_dl_itr.h"
-				>
-			</File>
-			<File
-				RelativePath=".\kbool\include\_lnk_itr.h"
+				RelativePath=".\clipper.h"
 				>
 			</File>
 			<File
@@ -274,10 +234,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\kbool\include\booleng.h"
-				>
-			</File>
-			<File
 				RelativePath=".\Box.h"
 				>
 			</File>
@@ -286,43 +242,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\kbool\include\graph.h"
-				>
-			</File>
-			<File
-				RelativePath=".\kbool\include\graphlst.h"
-				>
-			</File>
-			<File
-				RelativePath=".\kbool\include\line.h"
-				>
-			</File>
-			<File
-				RelativePath=".\kbool\include\link.h"
-				>
-			</File>
-			<File
-				RelativePath=".\kbool\include\lpoint.h"
-				>
-			</File>
-			<File
-				RelativePath=".\kbool\include\node.h"
-				>
-			</File>
-			<File
 				RelativePath=".\Point.h"
 				>
 			</File>
 			<File
 				RelativePath=".\PythonStuff.h"
-				>
-			</File>
-			<File
-				RelativePath=".\kbool\include\record.h"
-				>
-			</File>
-			<File
-				RelativePath=".\kbool\include\scanbeam.h"
 				>
 			</File>
 		</Filter>
