@@ -22,7 +22,7 @@ void CInnerCurves::Insert(const CCurve* pcurve)
 	{
 		CInnerCurves* c = *It;
 
-		switch(GetOverlapType(pcurve, c->m_curve))
+		switch(GetOverlapType(*pcurve, *(c->m_curve)))
 		{
 		case eOutside:
 			outside_of_these.push_back(c);
@@ -50,37 +50,6 @@ void CInnerCurves::Insert(const CCurve* pcurve)
 		new_item->m_inner_curves.insert(c);
 		this->m_inner_curves.erase(c);
 	}
-}
-
-eOverlapType CInnerCurves::GetOverlapType(const CCurve* c1, const CCurve* c2)const
-{
-	CArea a1;
-	a1.m_curves.push_back(*c1);
-	CArea a2;
-	a2.m_curves.push_back(*c2);
-	a1.Subtract(a2);
-	if(a1.m_curves.size() == 0)
-	{
-		return eInside;
-	}
-
-	a1.m_curves.clear();
-	a1.m_curves.push_back(*c1);
-	a2.Subtract(a1);
-	if(a2.m_curves.size() == 0)
-	{
-		return eOutside;
-	}
-
-	a2.m_curves.clear();
-	a2.m_curves.push_back(*c2);
-	a1.Intersect(a2);
-	if(a1.m_curves.size() == 0)
-	{
-		return eSiblings;
-	}
-
-	return eCrossing;
 }
 
 void CInnerCurves::GetArea(CArea &area, bool outside)

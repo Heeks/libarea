@@ -23,18 +23,28 @@ public:
 
 	CVertex():m_type(0), m_p(Point(0, 0)), m_c(Point(0,0)), m_user_data(0){}
 	CVertex(int type, const Point& p, const Point& c, int user_data = 0);
+	CVertex(const Point& p, int user_data = 0);
 };
 
 class SpanPtr
 {
+	Point NearestPointNotOnSpan(const Point& p)const;
+	double Parameter(const Point& p)const;
+	Point NearestPointToSpan(const SpanPtr& p, double &d)const;
+
 public:
+	bool m_start_span;
 	const Point& m_p;
 	const CVertex& m_v;
-	SpanPtr(const Point& p, const CVertex& v):m_p(p), m_v(v){}
-	Point NearestPoint(const Point& p);
+	SpanPtr(const Point& p, const CVertex& v, bool start_span = false):m_p(p), m_v(v), m_start_span(start_span){}
+	Point NearestPoint(const Point& p)const;
+	Point NearestPoint(const SpanPtr& p, double *d = NULL)const;
 	void GetBox(CBox &box);
 	double IncludedAngle()const;
 	double GetArea()const;
+	bool On(const Point& p, double* t = NULL)const;
+	Point MidPerim(double d)const;
+	Point MidParam(double param)const;
 };
 
 class CCurve
@@ -50,11 +60,14 @@ public:
 	void append(const CVertex& vertex);
 
 	void FitArcs();
-	Point NearestPoint(const Point& p);
+	Point NearestPoint(const Point& p)const;
+	Point NearestPoint(const CCurve& p, double *d = NULL)const;
+	Point NearestPoint(const SpanPtr& p, double *d = NULL)const;
 	void GetBox(CBox &box);
 	void Reverse();
 	double GetArea()const;
 	bool IsClockwise()const{return GetArea()>0;}
+	void ChangeStart(const Point &p);
 };
 
 struct CAreaPocketParams
@@ -90,7 +103,7 @@ public:
 	void Offset(double inwards_value);
 	void FitArcs();
 	unsigned int num_curves(){return m_curves.size();}
-	Point NearestPoint(const Point& p);
+	Point NearestPoint(const Point& p)const;
 	void GetBox(CBox &box);
 	void Reorder();
 	void MakePocketToolpath(std::list<CCurve> &toolpath, const CAreaPocketParams &params)const;
@@ -98,5 +111,16 @@ public:
 	bool HolesLinked();
 	void Split(std::list<CArea> &m_areas);
 };
+
+enum eOverlapType
+{
+	eOutside,
+	eInside,
+	eSiblings,
+	eCrossing,
+};
+
+eOverlapType GetOverlapType(const CCurve& c1, const CCurve& c2);
+eOverlapType GetOverlapType(const CArea& a1, const CArea& a2);
 
 #endif // #define AREA_HEADER

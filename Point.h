@@ -28,6 +28,12 @@ public:
 	double operator^(const Point &p)const{return (x * p.y - y * p.x);}// cross product m0.m1.sin a = v0 ^ v1
 	Point operator~(void)const{return Point(-y, x);}// perp to left
 	Point operator-(void)const{return Point(-x, -y);}// v1 = -v0;  (unary minus)
+	void Rotate(double cosa, double sina){// rotate vector by angle
+		double temp = -y * sina + x * cosa;
+		y = x * sina + cosa * y;
+		x = temp;
+	}	
+	void Rotate(double angle){if(fabs(angle) < 1.0e-09)return; Rotate(cos(angle), sin(angle));}
 };
 
 const Point operator*(const double &d, const Point &p);
