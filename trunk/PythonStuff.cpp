@@ -153,7 +153,7 @@ BOOST_PYTHON_MODULE(area) {
         .def("getVertices", &getVertices)
         .def("append",&CCurve::append)
         .def("text", &print_curve)
-		.def("NearestPoint", &CCurve::NearestPoint)
+		.def("NearestPoint", static_cast< Point (CCurve::*)(const Point& p)const >(&CCurve::NearestPoint))
 		.def("Reverse", &CCurve::Reverse)
 		.def("getNumVertices", &num_vertices)
 		.def("FirstVertex", &FirstVertex)

@@ -9,14 +9,6 @@
 class CArea;
 class CCurve;
 
-enum eOverlapType
-{
-	eOutside,
-	eInside,
-	eSiblings,
-	eCrossing,
-};
-
 class CAreaOrderer;
 
 class CInnerCurves
@@ -24,8 +16,6 @@ class CInnerCurves
 	CInnerCurves* m_pOuter;
 	const CCurve* m_curve; // always empty if top level
 	std::set<CInnerCurves*> m_inner_curves;
-
-	eOverlapType GetOverlapType(const CCurve* c1, const CCurve* c2)const;
 
 public:
 	static CAreaOrderer* area_orderer;

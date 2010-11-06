@@ -28,6 +28,10 @@ CVertex::CVertex(int type, const Point& p, const Point& c, int user_data):m_type
 {
 }
 
+CVertex::CVertex(const Point& p, int user_data):m_type(0), m_p(p), m_c(0.0, 0.0), m_user_data(user_data)
+{
+}
+
 void CCurve::append(const CVertex& vertex)
 {
 	m_vertices.push_back(vertex);
@@ -112,7 +116,10 @@ void CCurve::AddArcOrLines(bool check_for_arc, std::list<CVertex> &new_vertices,
 			for(std::list<const CVertex*>::iterator It = might_be_an_arc.begin(); It != might_be_an_arc.end(); It++)
 			{
 				const CVertex* v = *It;
-				new_vertices.push_back(*v);
+				if(It != might_be_an_arc.begin() || (new_vertices.size() == 0) || (new_vertices.back().m_p != v->m_p))
+				{
+					new_vertices.push_back(*v);
+				}
 			}
 			might_be_an_arc.clear();
 			if(check_for_arc)might_be_an_arc.push_back(back_vt);
@@ -159,19 +166,21 @@ void CCurve::FitArcs()
 	}
 }
 
-Point CCurve::NearestPoint(const Point& p)
+Point CCurve::NearestPoint(const Point& p)const
 {
 	double best_dist = 0.0;
 	Point best_point = Point(0, 0);
 	bool best_point_valid = false;
 	Point prev_p = Point(0, 0);
 	bool prev_p_valid = false;
-	for(std::list<CVertex>::iterator It = m_vertices.begin(); It != m_vertices.end(); It++)
+	bool first_span = true;
+	for(std::list<CVertex>::const_iterator It = m_vertices.begin(); It != m_vertices.end(); It++)
 	{
-		CVertex& vertex = *It;
+		const CVertex& vertex = *It;
 		if(prev_p_valid)
 		{
-			Point near_point = SpanPtr(prev_p, vertex).NearestPoint(p);
+			Point near_point = SpanPtr(prev_p, vertex, first_span).NearestPoint(p);
+			first_span = false;
 			double dist = near_point.dist(p);
 			if(!best_point_valid || dist < best_dist)
 			{
@@ -183,6 +192,36 @@ Point CCurve::NearestPoint(const Point& p)
 		prev_p = vertex.m_p;
 		prev_p_valid = true;
 	}
+	return best_point;
+}
+
+Point CCurve::NearestPoint(const CCurve& c, double *d)const
+{
+	double best_dist = 0.0;
+	Point best_point = Point(0, 0);
+	bool best_point_valid = false;
+	Point prev_p = Point(0, 0);
+	bool prev_p_valid = false;
+	bool first_span = true;
+	for(std::list<CVertex>::const_iterator It = c.m_vertices.begin(); It != c.m_vertices.end(); It++)
+	{
+		const CVertex& vertex = *It;
+		if(prev_p_valid)
+		{
+			double dist;
+			Point near_point = NearestPoint(SpanPtr(prev_p, vertex, first_span), &dist);
+			first_span = false;
+			if(!best_point_valid || dist < best_dist)
+			{
+				best_dist = dist;
+				best_point = near_point;
+				best_point_valid = true;
+			}
+		}
+		prev_p = vertex.m_p;
+		prev_p_valid = true;
+	}
+	if(d)*d = best_dist;
 	return best_point;
 }
 
@@ -244,7 +283,69 @@ double CCurve::GetArea()const
 	return area;
 }
 
-Point SpanPtr::NearestPoint(const Point& p)
+void CCurve::ChangeStart(const Point &p) {
+	CCurve new_curve;
+
+	bool started = false;
+	bool finished = false;
+
+	for(int i = 0; i < 2; i++)
+	{
+		const Point *prev_p = NULL;
+
+		for(std::list<CVertex>::const_iterator VIt = m_vertices.begin(); VIt != m_vertices.end() && !finished; VIt++)
+		{
+			const CVertex& vertex = *VIt;
+
+			if(prev_p)
+			{
+				SpanPtr span(*prev_p, vertex);
+				if(span.On(p))
+				{
+					if(started)
+					{
+						if(p == *prev_p)
+						{
+							new_curve.m_vertices.push_back(vertex);
+						}
+						else
+						{
+							if(p == vertex.m_p)new_curve.m_vertices.push_back(vertex);
+							else
+							{
+								CVertex v(vertex);
+								v.m_p = p;
+								new_curve.m_vertices.push_back(v);
+							}
+							finished = true;
+						}
+					}
+					else
+					{
+						new_curve.m_vertices.push_back(CVertex(p));
+						started = true;
+						if(p != vertex.m_p)new_curve.m_vertices.push_back(vertex);
+					}
+				}
+				else
+				{
+					if(started)
+					{
+						new_curve.m_vertices.push_back(vertex);
+					}
+				}
+			}
+			prev_p = &(vertex.m_p);
+		}
+	}
+
+	if(finished)
+	{
+		*this = new_curve;
+	}
+}
+
+Point SpanPtr::NearestPointNotOnSpan(const Point& p)const
 {
 	if(m_v.m_type == 0)
 	{
@@ -259,10 +360,122 @@ Point SpanPtr::NearestPoint(const Point& p)
 		double r = p.dist(m_v.m_c);
 		if(r < Point::tolerance)return m_p;
 		Point vc = (m_v.m_c - p);
-		vc.normalize();
-		Point pn = m_p + vc * ((r - radius) / r);
-		return pn;
+		return p + vc * ((r - radius) / r);
 	}
+}
+
+Point SpanPtr::NearestPoint(const Point& p)const
+{
+	Point np = NearestPointNotOnSpan(p);
+	double t = Parameter(np);
+	if(t >= 0.0 && t <= 1.0)return np;
+
+	double d1 = p.dist(this->m_p);
+	double d2 = p.dist(this->m_v.m_p);
+
+	if(d1 < d2)return this->m_p;
+	else return m_v.m_p;
+}
+
+Point CCurve::NearestPoint(const SpanPtr& p, double *d)const
+{
+	double best_dist = 0.0;
+	Point best_point = Point(0, 0);
+	bool best_point_valid = false;
+	Point prev_p = Point(0, 0);
+	bool prev_p_valid = false;
+	bool first_span = true;
+	for(std::list<CVertex>::const_iterator It = m_vertices.begin(); It != m_vertices.end(); It++)
+	{
+		const CVertex& vertex = *It;
+		if(prev_p_valid)
+		{
+			double dist;
+			Point near_point = SpanPtr(prev_p, vertex, first_span).NearestPoint(p, &dist);
+			first_span = false;
+			if(!best_point_valid || dist < best_dist)
+			{
+				best_dist = dist;
+				best_point = near_point;
+				best_point_valid = true;
+			}
+		}
+		prev_p = vertex.m_p;
+		prev_p_valid = true;
+	}
+	if(d)*d = best_dist;
+	return best_point;
+}
+
+Point SpanPtr::MidPerim(double d)const {
+	/// returns a point which is 0-d along span
+	Point p;
+	if(m_v.m_type == 0) {
+		Point vs = m_v.m_p - m_p;
+
+		p = vs * d + m_p;
+	}
+	else {
+		Point v = m_p - m_v.m_c;
+		double radius = m_p.dist(m_v.m_c);
+		v.Rotate(d * m_v.m_type / radius);
+		p = v + m_v.m_c;
+	}
+	return p;
+}
+
+Point SpanPtr::MidParam(double param)const {
+	/// returns a point which is 0-1 along span
+	if(fabs(param) < 0.00000000000001)return m_p;
+	if(fabs(param - 1.0) < 0.00000000000001)return m_v.m_p;
+
+	Point p;
+	if(m_v.m_type == 0) {
+		Point vs = m_v.m_p - m_p;
+		p = vs * param + m_p;
+	}
+	else {
+		Point v = m_p - m_v.m_c;
+		double radius = m_p.dist(m_v.m_c);
+		v.Rotate(param * IncludedAngle());
+		p = v + m_v.m_c;
+	}
+	return p;
+}
+
+Point SpanPtr::NearestPointToSpan(const SpanPtr& p, double &d)const
+{
+	Point midpoint = MidParam(0.5);
+	Point np = p.NearestPoint(m_p);
+	Point best_point = m_p;
+	double dist = np.dist(m_p);
+	if(p.m_start_span)dist -= (CArea::m_accuracy * 2); // give start of curve most priority
+	Point npm = p.NearestPoint(midpoint);
+	double dm = npm.dist(midpoint) - CArea::m_accuracy; // lie about midpoint distance to give midpoints priority
+	if(dm < dist){dist = dm; best_point = midpoint;}
+	Point np2 = p.NearestPoint(m_v.m_p);
+	double dp2 = np2.dist(m_v.m_p);
+	if(dp2 < dist){dist = dp2; best_point = m_v.m_p;}
+	d = dist;
+	return best_point;
+}
+
+Point SpanPtr::NearestPoint(const SpanPtr& p, double *d)const
+{
+	double best_dist;
+	Point best_point = this->NearestPointToSpan(p, best_dist);
+
+	// try the other way round too
+	double best_dist2;
+	Point best_point2 = p.NearestPointToSpan(*this, best_dist2);
+	if(best_dist2 < best_dist)
+	{
+		best_point = NearestPoint(best_point2);
+		best_dist = best_dist2;
+	}
+
+	if(d)*d = best_dist;
+	return best_point;
 }
 
 static int GetQuadrant(const Point& v){
@@ -372,6 +585,43 @@ double SpanPtr::GetArea()const
 	return 0.5 * (m_v.m_p.x - m_p.x) * (m_p.y + m_v.m_p.y);
 }
 
+double SpanPtr::Parameter(const Point& p)const
+{
+	double t;
+	if(m_v.m_type == 0) {
+		Point v0 = p - m_p;
+		Point vs = m_v.m_p - m_p;
+		double length = vs.length();
+		vs.normalize();
+		t = vs * v0;
+		t = t / length;
+	}
+	else
+	{
+		// true if p lies on arc span sp (p must be on circle of span)
+		Point vs = ~(m_p - m_v.m_c);
+		Point v = ~(p - m_v.m_c);
+		vs.normalize();
+		v.normalize();
+		if(m_v.m_type == -1){
+			vs = -vs;
+			v = -v;
+		}
+		double ang = ::IncludedAngle(vs, v, m_v.m_type);
+		double angle = IncludedAngle();
+		t = ang / angle;
+	}
+	return t;
+}
+
+bool SpanPtr::On(const Point& p, double* t)const
+{
+	if(p != NearestPoint(p))return false;
+	if(t)*t = Parameter(p);
+	return true;
+}
+
+
 double CArea::m_accuracy = 0.01;
 double CArea::m_units = 1.0;
 
@@ -388,13 +638,13 @@ void CArea::FitArcs(){
 	}
 }
 
-Point CArea::NearestPoint(const Point& p)
+Point CArea::NearestPoint(const Point& p)const
 {
 	double best_dist = 0.0;
 	Point best_point = Point(0, 0);
-	for(std::list<CCurve>::iterator It = m_curves.begin(); It != m_curves.end(); It++)
+	for(std::list<CCurve>::const_iterator It = m_curves.begin(); It != m_curves.end(); It++)
 	{
-		CCurve& curve = *It;
+		const CCurve& curve = *It;
 		Point near_point = curve.NearestPoint(p);
 		double dist = near_point.dist(p);
 		if(It == m_curves.begin() || dist < best_dist)
@@ -660,7 +910,7 @@ static void zigzag(const CArea &input_a)
 
     double height = b.MaxY() - b.MinY();
     int num_steps = int(height / stepover_for_pocket + 1);
-    double y = b.MinY() + 0.1 * one_over_units;
+    double y = b.MinY();// + 0.1 * one_over_units;
     Point null_point(0, 0);
     rightward_for_zigs = true;
 	curve_list_for_zigs.clear();
@@ -751,4 +1001,41 @@ void CArea::Split(std::list<CArea> &m_areas)
 			}
 		}
 	}
+}
+
+eOverlapType GetOverlapType(const CCurve& c1, const CCurve& c2)
+{
+	CArea a1;
+	a1.m_curves.push_back(c1);
+	CArea a2;
+	a2.m_curves.push_back(c2);
+
+	return GetOverlapType(a1, a2);
+}
+
+eOverlapType GetOverlapType(const CArea& a1, const CArea& a2)
+{
+	CArea A1(a1);
+
+	A1.Subtract(a2);
+	if(A1.m_curves.size() == 0)
+	{
+		return eInside;
+	}
+
+	CArea A2(a2);
+	A2.Subtract(a1);
+	if(A2.m_curves.size() == 0)
+	{
+		return eOutside;
+	}
+
+	A1 = a1;
+	A1.Intersect(a2);
+	if(A1.m_curves.size() == 0)
+	{
+		return eSiblings;
+	}
+
+	return eCrossing;
 }

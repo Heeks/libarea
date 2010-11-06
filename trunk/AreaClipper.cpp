@@ -256,7 +256,7 @@ static void SetFromResult( CArea& area, const TPolyPolygon& pp, bool reverse = t
 			else curve.m_vertices.push_back(vertex);
         }
 		// make a copy of the first point at the end
-		if(reverse)curve.m_vertices.push_front(curve.m_vertices.front());
+		if(reverse)curve.m_vertices.push_front(curve.m_vertices.back());
 		else curve.m_vertices.push_back(curve.m_vertices.front());
 
 		curve.FitArcs();
