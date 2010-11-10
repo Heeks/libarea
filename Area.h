@@ -95,6 +95,7 @@ public:
 	std::list<CCurve> m_curves;
 	static double m_accuracy;
 	static double m_units; // 1.0 for mm, 25.4 for inches. All points are multiplied by this before going to the engine
+	static bool m_fit_arcs;
 
 	void append(const CCurve& curve);
 	void Subtract(const CArea& a2);
