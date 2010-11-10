@@ -288,11 +288,13 @@ void CCurve::ChangeStart(const Point &p) {
 
 	bool started = false;
 	bool finished = false;
+	int start_span;
 
 	for(int i = 0; i < 2; i++)
 	{
 		const Point *prev_p = NULL;
 
+		int span_index = 0;
 		for(std::list<CVertex>::const_iterator VIt = m_vertices.begin(); VIt != m_vertices.end() && !finished; VIt++)
 		{
 			const CVertex& vertex = *VIt;
@@ -304,7 +306,7 @@ void CCurve::ChangeStart(const Point &p) {
 				{
 					if(started)
 					{
-						if(p == *prev_p)
+						if(p == *prev_p || span_index != start_span)
 						{
 							new_curve.m_vertices.push_back(vertex);
 						}
@@ -324,6 +326,7 @@ void CCurve::ChangeStart(const Point &p) {
 					{
 						new_curve.m_vertices.push_back(CVertex(p));
 						started = true;
+						start_span = span_index;
 						if(p != vertex.m_p)new_curve.m_vertices.push_back(vertex);
 					}
 				}
@@ -334,6 +337,7 @@ void CCurve::ChangeStart(const Point &p) {
 						new_curve.m_vertices.push_back(vertex);
 					}
 				}
+				span_index++;
 			}
 			prev_p = &(vertex.m_p);
 		}
@@ -624,6 +628,7 @@ bool SpanPtr::On(const Point& p, double* t)const
 
 double CArea::m_accuracy = 0.01;
 double CArea::m_units = 1.0;
+bool CArea::m_fit_arcs = true;
 
 void CArea::append(const CCurve& curve)
 {
@@ -684,7 +689,16 @@ void CArea::Reorder()
 	*this = ao.ResultArea();
 }
 
+class ZigZag
+{
+public:
+	CCurve zig;
+	CCurve zag;
+	ZigZag(const CCurve& Zig, const CCurve& Zag):zig(Zig), zag(Zag){}
+};
+
 static double stepover_for_pocket = 0.0;
+static std::list<ZigZag> zigzag_list_for_zigs;
 static std::list<CCurve> curve_list_for_zigs;
 static bool rightward_for_zigs = true;
 static double sin_angle_for_zigs = 0.0;
@@ -734,106 +748,156 @@ static void rotate_area(CArea &a)
 	}
 }
 
+void test_y_point(int i, const Point& p, Point& best_p, bool &found, int &best_index, double y, bool left_not_right)
+{
+	// only consider points at y
+	if(fabs(p.y - y) < 0.002 * one_over_units)
+	{
+		if(found)
+		{
+			// equal high point
+			if(left_not_right)
+			{
+				// use the furthest left point
+				if(p.x < best_p.x)
+				{
+					best_p = p;
+					best_index = i;
+				}
+			}
+			else
+			{
+				// use the furthest right point
+				if(p.x > best_p.x)
+				{
+					best_p = p;
+					best_index = i;
+				}
+			}
+		}
+		else
+		{
+			best_p = p;
+			best_index = i;
+			found = true;
+		}
+	}
+}
+
 static void make_zig_curve(const CCurve& input_curve, double y0, double y)
 {
 	CCurve curve(input_curve);
 
-    if(rightward_for_zigs)
-        curve.Reverse();
-
-    // find a high point to start looking from
-    Point high_point;
-	bool high_point_found = false;
-
-	for(std::list<CVertex>::const_iterator VIt = curve.m_vertices.begin(); VIt != curve.m_vertices.end(); VIt++)
+	if(rightward_for_zigs)
 	{
-		const CVertex& vertex = *VIt;
-        if(!high_point_found)
-		{
-			high_point = vertex.m_p;
-			high_point_found = true;
-		}
-		else if(vertex.m_p.y > high_point.y)
-		{
-			// use this as the new high point
-			high_point = vertex.m_p;
-		}
-        else if(fabs(vertex.m_p.y - high_point.y) < 0.002 * one_over_units)
-		{
-			// equal high point
-			if(rightward_for_zigs)
-			{
-                // use the furthest left point
-				if(vertex.m_p.x < high_point.x)
-					high_point = vertex.m_p;
-			}
-            else
-			{
-				// use the furthest right point
-				if(vertex.m_p.x > high_point.x)
-                    high_point = vertex.m_p;
-			}
-		}
+		if(curve.IsClockwise())
+			curve.Reverse();
+	}
+	else
+	{
+		if(!curve.IsClockwise())
+			curve.Reverse();
 	}
 
-	if(!high_point_found)
-		return;
-        
-    CCurve zig;
+    // find a high point to start looking from
+	Point top_left;
+	int top_left_index;
+	bool top_left_found = false;
+	Point top_right;
+	int top_right_index;
+	bool top_right_found = false;
+	Point bottom_left;
+	int bottom_left_index;
+	bool bottom_left_found = false;
+
+	int i =0;
+	for(std::list<CVertex>::const_iterator VIt = curve.m_vertices.begin(); VIt != curve.m_vertices.end(); VIt++, i++)
+	{
+		const CVertex& vertex = *VIt;
+
+		test_y_point(i, vertex.m_p, top_right, top_right_found, top_right_index, y, !rightward_for_zigs);
+		test_y_point(i, vertex.m_p, top_left, top_left_found, top_left_index, y, rightward_for_zigs);
+		test_y_point(i, vertex.m_p, bottom_left, bottom_left_found, bottom_left_index, y0, rightward_for_zigs);
+	}
+
+	int start_index;
+	int end_index;
+	int zag_end_index;
+
+	if(bottom_left_found)start_index = bottom_left_index;
+	else if(top_left_found)start_index = top_left_index;
+
+	if(top_right_found)
+	{
+		end_index = top_right_index;
+		zag_end_index = top_left_index;
+	}
+	else
+	{
+		end_index = bottom_left_index;
+		zag_end_index =  bottom_left_index;
+	}
+	if(end_index <= start_index)end_index += (i-1);
+	if(zag_end_index <= start_index)zag_end_index += (i-1);
+
+    CCurve zig, zag;
     
-    high_point_found = false;
     bool zig_started = false;
-    bool zag_found = false;
+    bool zig_finished = false;
+    bool zag_finished = false;
     
+	int v_index = 0;
 	for(int i = 0; i < 2; i++)
 	{
 		// process the curve twice because we don't know where it will start
-        const Point *prev_p = NULL;
-
+		if(zag_finished)
+			break;
 		for(std::list<CVertex>::const_iterator VIt = curve.m_vertices.begin(); VIt != curve.m_vertices.end(); VIt++)
 		{
-			const CVertex& vertex = *VIt;
-			if(zag_found)
-				break;
-
-            if(prev_p)
+			if(i == 1 && VIt == curve.m_vertices.begin())
 			{
-				if(zig_started)
+				continue;
+			}
+
+			const CVertex& vertex = *VIt;
+
+			if(zig_finished)
+			{
+				zag.m_vertices.push_back(unrotated_vertex(vertex));
+				if(v_index == zag_end_index)
 				{
-					zig.m_vertices.push_back(unrotated_vertex(vertex));
-                    if(fabs(vertex.m_p.y - y) < 0.002 * one_over_units)
-					{
-						zag_found = true;
-						break;
-					}
-				}
-				else if(high_point_found)
-				{
-                    if(fabs(vertex.m_p.y - y0) < 0.002 * one_over_units)
-					{
-						if(zig_started)
-						{
-							zig.m_vertices.push_back(unrotated_vertex(vertex));
-						}
-                        else if(fabs(prev_p->y - y0) < 0.002 * one_over_units && (vertex.m_type == 0))
-						{
-                            zig.m_vertices.push_back(CVertex(0, unrotated_point(*prev_p), Point(0, 0)));
-                            zig.m_vertices.push_back(unrotated_vertex(vertex));
-                            zig_started = true;
-						}
-					}
-				}
-                else if((vertex.m_p.x == high_point.x) && (vertex.m_p.y == high_point.y))
-				{
-					high_point_found = true;
+					zag_finished = true;
+					break;
 				}
 			}
-            prev_p = &(vertex.m_p);
+			else if(zig_started)
+			{
+				zig.m_vertices.push_back(unrotated_vertex(vertex));
+				if(v_index == end_index)
+				{
+					zig_finished = true;
+					if(v_index == zag_end_index)
+					{
+						zag_finished = true;
+						break;
+					}
+					zag.m_vertices.push_back(unrotated_vertex(vertex));
+				}
+			}
+			else
+			{
+				if(v_index == start_index)
+				{
+					zig.m_vertices.push_back(unrotated_vertex(vertex));
+					zig_started = true;
+				}
+			}
+			v_index++;
 		}
 	}
         
-    if(zig_started)
-		curve_list_for_zigs.push_back(zig);
+    if(zig_finished)
+		zigzag_list_for_zigs.push_back(ZigZag(zig, zag));
 }
 
 void make_zig(const CArea &a, double y0, double y)
@@ -845,51 +909,96 @@ void make_zig(const CArea &a, double y0, double y)
 	}
 }
         
-std::list< std::list<CCurve> > reorder_zig_list_list;
+std::list< std::list<ZigZag> > reorder_zig_list_list;
         
-void add_reorder_zig(const CCurve &curve)
+void add_reorder_zig(ZigZag &zigzag)
 {
     // look in existing lists
-    const Point& s = curve.m_vertices.front().m_p;
 
-	for(std::list< std::list<CCurve> >::iterator It = reorder_zig_list_list.begin(); It != reorder_zig_list_list.end(); It++)
+	// see if the zag is part of an existing zig
+	if(zigzag.zag.m_vertices.size() > 1)
 	{
-		std::list<CCurve> &curve_list = *It;
-		const CCurve& last_curve = curve_list.back();
-        const Point& e = last_curve.m_vertices.back().m_p;
-        if((fabs(s.x - e.x) < (0.002 * one_over_units)) && (fabs(s.y - e.y) < (0.002 * one_over_units)))
+		const Point& zag_e = zigzag.zag.m_vertices.front().m_p;
+		bool zag_removed = false;
+		for(std::list< std::list<ZigZag> >::iterator It = reorder_zig_list_list.begin(); It != reorder_zig_list_list.end() && !zag_removed; It++)
 		{
-            curve_list.push_back(curve);
+			std::list<ZigZag> &zigzag_list = *It;
+			for(std::list<ZigZag>::iterator It2 = zigzag_list.begin(); It2 != zigzag_list.end() && !zag_removed; It2++)
+			{
+				const ZigZag& z = *It2;
+				for(std::list<CVertex>::const_iterator It3 = z.zig.m_vertices.begin(); It3 != z.zig.m_vertices.end() && !zag_removed; It3++)
+				{
+					const CVertex &v = *It3;
+					if((fabs(zag_e.x - v.m_p.x) < (0.002 * one_over_units)) && (fabs(zag_e.y - v.m_p.y) < (0.002 * one_over_units)))
+					{
+						// remove zag from zigzag
+						zigzag.zag.m_vertices.clear();
+						zag_removed = true;
+					}
+				}
+			}
+		}
+	}
+
+	// see if the zigzag can join the end of an existing list
+	const Point& zig_s = zigzag.zig.m_vertices.front().m_p;
+	for(std::list< std::list<ZigZag> >::iterator It = reorder_zig_list_list.begin(); It != reorder_zig_list_list.end(); It++)
+	{
+		std::list<ZigZag> &zigzag_list = *It;
+		const ZigZag& last_zigzag = zigzag_list.back();
+        const Point& e = last_zigzag.zig.m_vertices.back().m_p;
+        if((fabs(zig_s.x - e.x) < (0.002 * one_over_units)) && (fabs(zig_s.y - e.y) < (0.002 * one_over_units)))
+		{
+            zigzag_list.push_back(zigzag);
 			return;
 		}
 	}
         
     // else add a new list
-    std::list<CCurve> curve_list;
-    curve_list.push_back(curve);
-    reorder_zig_list_list.push_back(curve_list);
+    std::list<ZigZag> zigzag_list;
+    zigzag_list.push_back(zigzag);
+    reorder_zig_list_list.push_back(zigzag_list);
 }
 
 void reorder_zigs()
 {
-    reorder_zig_list_list.clear();
-	for(std::list<CCurve>::const_iterator It = curve_list_for_zigs.begin(); It != curve_list_for_zigs.end(); It++)
+	for(std::list<ZigZag>::iterator It = zigzag_list_for_zigs.begin(); It != zigzag_list_for_zigs.end(); It++)
 	{
-		const CCurve &curve = *It;
-        add_reorder_zig(curve);
+		ZigZag &zigzag = *It;
+        add_reorder_zig(zigzag);
 	}
         
-	curve_list_for_zigs.clear();
+	zigzag_list_for_zigs.clear();
 
-	for(std::list< std::list<CCurve> >::iterator It = reorder_zig_list_list.begin(); It != reorder_zig_list_list.end(); It++)
+	for(std::list< std::list<ZigZag> >::iterator It = reorder_zig_list_list.begin(); It != reorder_zig_list_list.end(); It++)
 	{
-		std::list<CCurve> &curve_list = *It;
-		for(std::list<CCurve>::const_iterator It = curve_list.begin(); It != curve_list.end(); It++)
+		std::list<ZigZag> &zigzag_list = *It;
+		if(zigzag_list.size() == 0)continue;
+
+		curve_list_for_zigs.push_back(CCurve());
+		for(std::list<ZigZag>::const_iterator It = zigzag_list.begin(); It != zigzag_list.end();)
 		{
-			const CCurve &curve = *It;
-            curve_list_for_zigs.push_back(curve);
+			const ZigZag &zigzag = *It;
+			for(std::list<CVertex>::const_iterator It2 = zigzag.zig.m_vertices.begin(); It2 != zigzag.zig.m_vertices.end(); It2++)
+			{
+				if(It2 == zigzag.zig.m_vertices.begin() && It != zigzag_list.begin())continue; // only add the first vertex if doing the first zig
+				const CVertex &v = *It2;
+				curve_list_for_zigs.back().m_vertices.push_back(v);
+			}
+
+			It++;
+			if(It == zigzag_list.end())
+			{
+				for(std::list<CVertex>::const_iterator It2 = zigzag.zag.m_vertices.begin(); It2 != zigzag.zag.m_vertices.end(); It2++)
+				{
+					if(It2 == zigzag.zag.m_vertices.begin())continue; // don't add the first vertex of the zag
+					const CVertex &v = *It2;
+					curve_list_for_zigs.back().m_vertices.push_back(v);
+				}
+			}
 		}
 	}
+	reorder_zig_list_list.clear();
 }
 
 static void zigzag(const CArea &input_a)

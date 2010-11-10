@@ -259,7 +259,7 @@ static void SetFromResult( CArea& area, const TPolyPolygon& pp, bool reverse = t
 		if(reverse)curve.m_vertices.push_front(curve.m_vertices.back());
 		else curve.m_vertices.push_back(curve.m_vertices.front());
 
-		curve.FitArcs();
+		if(CArea::m_fit_arcs)curve.FitArcs();
     }
 }
 
