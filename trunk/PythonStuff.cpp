@@ -112,13 +112,25 @@ boost::python::list MakePocketToolpath(const CArea& a, double tool_radius, doubl
 	std::list<CCurve> toolpath;
 
 	CAreaPocketParams params(tool_radius, extra_offset, stepover, from_center, use_zig_zag, zig_angle);
-	a.MakePocketToolpath(toolpath, params);
+	a.SplitAndMakePocketToolpath(toolpath, params);
 
 	boost::python::list clist;
 	BOOST_FOREACH(const CCurve& c, toolpath) {
 		clist.append(c);
     }
 	return clist;
+}
+
+boost::python::list SplitArea(const CArea& a)
+{
+	std::list<CArea> areas;
+	a.Split(areas);
+
+	boost::python::list alist;
+	BOOST_FOREACH(const CArea& a, areas) {
+		alist.append(a);
+    }
+	return alist;
 }
 
 BOOST_PYTHON_MODULE(area) {
@@ -185,6 +197,7 @@ BOOST_PYTHON_MODULE(area) {
 		.def("GetBox", &CArea::GetBox)
 		.def("Reorder", &CArea::Reorder)
 		.def("MakePocketToolpath", &MakePocketToolpath)
+		.def("Split", &SplitArea);
     ;
 
     bp::def("set_units", set_units);
