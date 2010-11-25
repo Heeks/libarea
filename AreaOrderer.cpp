@@ -101,9 +101,10 @@ void CInnerCurves::GetArea(CArea &area, bool outside, bool use_curve)const
 void CInnerCurves::Unite(const CInnerCurves* c)
 {
 	// unite all the curves in c, with this one
+	CArea* new_area = new CArea();
+	new_area->m_curves.push_back(*m_curve);
 	delete m_unite_area;
-	m_unite_area = new CArea();
-	m_unite_area->m_curves.push_back(*m_curve);
+	m_unite_area = new_area;
 
 	CArea a2;
 	c->GetArea(a2);

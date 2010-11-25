@@ -96,6 +96,13 @@ public:
 	static double m_accuracy;
 	static double m_units; // 1.0 for mm, 25.4 for inches. All points are multiplied by this before going to the engine
 	static bool m_fit_arcs;
+	static double m_processing_done; // 0.0 to 100.0, set inside MakeOnePocketCurve
+	static double m_single_area_processing_length;
+	static double m_after_MakeOffsets_length;
+	static double m_MakeOffsets_increment;
+	static double m_split_processing_length;
+	static bool m_set_processing_length_in_split;
+	static bool m_please_abort; // the user sets this from another thread, to tell MakeOnePocketCurve to finish with no result.
 
 	void append(const CCurve& curve);
 	void Subtract(const CArea& a2);
@@ -108,9 +115,11 @@ public:
 	void GetBox(CBox &box);
 	void Reorder();
 	void MakePocketToolpath(std::list<CCurve> &toolpath, const CAreaPocketParams &params)const;
+	void SplitAndMakePocketToolpath(std::list<CCurve> &toolpath, const CAreaPocketParams &params)const;
 	void MakeOnePocketCurve(CCurve& curve, const CAreaPocketParams &params)const;
-	bool HolesLinked();
-	void Split(std::list<CArea> &m_areas);
+	bool HolesLinked()const;
+	void Split(std::list<CArea> &m_areas)const;
+	double GetArea(bool always_add = false)const;
 };
 
 enum eOverlapType
