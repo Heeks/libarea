@@ -62,7 +62,7 @@ void CurveTree::GetCurve(CCurve& output)
 			SpanPtr span(*prev_p, vertex);
 
 			// order inners on this span
-			std::map<double, CurveTree*> ordered_inners;
+			std::multimap<double, CurveTree*> ordered_inners;
 			for(std::list<CurveTree*>::iterator It2 = inners_to_visit.begin(); It2 != inners_to_visit.end();)
 			{
 				CurveTree *inner = *It2;
@@ -80,7 +80,7 @@ void CurveTree::GetCurve(CCurve& output)
 			}
 
 			if(CArea::m_please_abort)return;
-			for(std::map<double, CurveTree*>::iterator It2 = ordered_inners.begin(); It2 != ordered_inners.end(); It2++)
+			for(std::multimap<double, CurveTree*>::iterator It2 = ordered_inners.begin(); It2 != ordered_inners.end(); It2++)
 			{
 				CurveTree& inner = *(It2->second);
 				if(inner.point_on_parent != output.m_vertices.back().m_p)
@@ -141,6 +141,8 @@ void CurveTree::MakeOffsets()
 			smaller.Subtract(island_and_offset->offset);
 			if(CArea::m_please_abort)return;
 			It = offset_islands.erase(It);
+			if(offset_islands.size() == 0)break;
+			It = offset_islands.begin();
 		}
 	}
 
