@@ -208,6 +208,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Line.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\PythonStuff.cpp"
 				>
 			</File>
@@ -239,6 +243,10 @@
 			</File>
 			<File
 				RelativePath=".\clipper.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Line.h"
 				>
 			</File>
 			<File

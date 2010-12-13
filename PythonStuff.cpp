@@ -107,6 +107,11 @@ static bool holes_linked()
 #endif
 }
 
+static void append_point(CCurve& c, const Point& p)
+{
+	c.m_vertices.push_back(CVertex(p));
+}
+
 boost::python::list MakePocketToolpath(const CArea& a, double tool_radius, double extra_offset, double stepover, bool from_center, bool use_zig_zag, double zig_angle)
 {
 	std::list<CCurve> toolpath;
@@ -153,6 +158,7 @@ BOOST_PYTHON_MODULE(area) {
 	bp::class_<CVertex>("Vertex") 
         .def(bp::init<CVertex>())
         .def(bp::init<int, Point, Point>())
+        .def(bp::init<Point>())
         .def(bp::init<int, Point, Point, int>())
         .def_readwrite("type", &CVertex::m_type)
         .def_readwrite("p", &CVertex::m_p)
@@ -164,6 +170,7 @@ BOOST_PYTHON_MODULE(area) {
         .def(bp::init<CCurve>())
         .def("getVertices", &getVertices)
         .def("append",&CCurve::append)
+        .def("append",&append_point)
         .def("text", &print_curve)
 		.def("NearestPoint", static_cast< Point (CCurve::*)(const Point& p)const >(&CCurve::NearestPoint))
 		.def("Reverse", &CCurve::Reverse)
