@@ -6,6 +6,7 @@
 #include "Circle.h"
 #include "Arc.h"
 #include "AreaOrderer.h"
+#include "Line.h"
 
 const Point operator*(const double &d, const Point &p){ return p * d;}
 double Point::tolerance = 0.001;
@@ -63,6 +64,9 @@ bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& migh
 	Point p1(mid_vt->m_p);
 	Point p2(might_be_an_arc.back()->m_p);
 	Circle c(p0, p1, p2);
+
+	if(Line(p0, p2 - p0).Dist(p1) <= Point::tolerance)
+		return false;
 
 	const double max_arc_radius = 1.0 / Point::tolerance;
 	if (c.m_radius > max_arc_radius)
@@ -628,7 +632,7 @@ bool SpanPtr::On(const Point& p, double* t)const
 
 double CArea::m_accuracy = 0.01;
 double CArea::m_units = 1.0;
-bool CArea::m_fit_arcs = false;
+bool CArea::m_fit_arcs = true;
 double CArea::m_single_area_processing_length = 0.0;
 double CArea::m_processing_done = 0.0;
 bool CArea::m_please_abort = false;
@@ -1219,4 +1223,26 @@ eOverlapType GetOverlapType(const CArea& a1, const CArea& a2)
 	}
 
 	return eCrossing;
+}
+
+bool IsInside(const Point& p, const CCurve& c)
+{
+	CArea a;
+	a.m_curves.push_back(c);
+	return IsInside(p, a);
+}
+
+bool IsInside(const Point& p, const CArea& a)
+{
+	CArea a2;
+	CCurve c;
+	c.m_vertices.push_back(CVertex(Point(p.x - 0.01, p.y - 0.01)));
+	c.m_vertices.push_back(CVertex(Point(p.x + 0.01, p.y - 0.01)));
+	c.m_vertices.push_back(CVertex(Point(p.x + 0.01, p.y + 0.01)));
+	c.m_vertices.push_back(CVertex(Point(p.x - 0.01, p.y + 0.01)));
+	c.m_vertices.push_back(CVertex(Point(p.x - 0.01, p.y - 0.01)));
+	a2.m_curves.push_back(c);
+	a2.Intersect(a);
+	if(fabs(a2.GetArea()) < 0.0004)return false;
+	return true;
 }

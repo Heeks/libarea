@@ -253,6 +253,22 @@ static void MakePolyPoly( const CArea& area, TPolyPolygon &pp, bool reverse = tr
 	}
 }
 
+static void SetFromResult( CCurve& curve, const TPolygon& p, bool reverse = true )
+{
+	for(unsigned int j = 0; j < p.size(); j++)
+	{
+		const TDoublePoint &pt = p[j];
+		CVertex vertex(0, Point(pt.X / CArea::m_units, pt.Y / CArea::m_units), Point(0.0, 0.0));
+		if(reverse)curve.m_vertices.push_front(vertex);
+		else curve.m_vertices.push_back(vertex);
+	}
+	// make a copy of the first point at the end
+	if(reverse)curve.m_vertices.push_front(curve.m_vertices.back());
+	else curve.m_vertices.push_back(curve.m_vertices.front());
+
+	if(CArea::m_fit_arcs)curve.FitArcs();
+}
+
 static void SetFromResult( CArea& area, const TPolyPolygon& pp, bool reverse = true )
 {
 	// delete existing geometry
@@ -264,18 +280,7 @@ static void SetFromResult( CArea& area, const TPolyPolygon& pp, bool reverse = t
 
 		area.m_curves.push_back(CCurve());
 		CCurve &curve = area.m_curves.back();
-		for(unsigned int j = 0; j < p.size(); j++)
-		{
-			const TDoublePoint &pt = p[j];
-			CVertex vertex(0, Point(pt.X / CArea::m_units, pt.Y / CArea::m_units), Point(0.0, 0.0));
-			if(reverse)curve.m_vertices.push_front(vertex);
-			else curve.m_vertices.push_back(vertex);
-        }
-		// make a copy of the first point at the end
-		if(reverse)curve.m_vertices.push_front(curve.m_vertices.back());
-		else curve.m_vertices.push_back(curve.m_vertices.front());
-
-		if(CArea::m_fit_arcs)curve.FitArcs();
+		SetFromResult(curve, p, reverse);
     }
 }
 
@@ -324,4 +329,25 @@ void CArea::Offset(double inwards_value)
 	MakePolyPoly(*this, pp, false);
 	OffsetWithLoops(pp, pp2, inwards_value * m_units);
 	SetFromResult(*this, pp2, false);
+}
+
+void UnFitArcs(CCurve &curve)
+{
+	pts_for_AddVertex.clear();
+	const CVertex* prev_vertex = NULL;
+	for(std::list<CVertex>::const_iterator It2 = curve.m_vertices.begin(); It2 != curve.m_vertices.end(); It2++)
+	{
+		const CVertex& vertex = *It2;
+		AddVertex(vertex, prev_vertex);
+		prev_vertex = &vertex;
+	}
+
+	curve.m_vertices.clear();
+
+	for(std::list<TDoublePoint>::iterator It = pts_for_AddVertex.begin(); It != pts_for_AddVertex.end(); It++)
+	{
+		TDoublePoint &pt = *It;
+		CVertex vertex(0, Point(pt.X / CArea::m_units, pt.Y / CArea::m_units), Point(0.0, 0.0));
+		curve.m_vertices.push_back(vertex);
+	}
 }
