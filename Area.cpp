@@ -6,7 +6,6 @@
 #include "Circle.h"
 #include "Arc.h"
 #include "AreaOrderer.h"
-#include "Line.h"
 
 const Point operator*(const double &d, const Point &p){ return p * d;}
 double Point::tolerance = 0.001;
@@ -23,6 +22,21 @@ void Point::normalize()
 	double len = length();
 	if(fabs(len)> 0.000000000000001)
 		*this = (*this) / len;
+}
+
+Line::Line(const Point& P0, const Point& V):p0(P0), v(V)
+{
+}
+
+double Line::Dist(const Point& p)const
+{
+	Point vn = v;
+	vn.normalize();
+	double d1 = p0 * vn;
+	double d2 = p * vn;
+	Point pn = p0 + vn * (d2 - d1);
+
+	return pn.dist(p);
 }
 
 CVertex::CVertex(int type, const Point& p, const Point& c, int user_data):m_type(type), m_p(p), m_c(c), m_user_data(user_data)
