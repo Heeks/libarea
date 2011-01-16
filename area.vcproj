@@ -192,6 +192,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\AreaDxf.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\AreaOrderer.cpp"
 				>
 			</File>
@@ -205,6 +209,10 @@
 			</File>
 			<File
 				RelativePath=".\Circle.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\dxf.cpp"
 				>
 			</File>
 			<File
@@ -270,6 +278,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\AreaDxf.h"
+				>
+			</File>
+			<File
 				RelativePath=".\AreaOrderer.h"
 				>
 			</File>
@@ -283,6 +295,10 @@
 			</File>
 			<File
 				RelativePath=".\Circle.h"
+				>
+			</File>
+			<File
+				RelativePath=".\dxf.h"
 				>
 			</File>
 			<File

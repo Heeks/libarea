@@ -6,6 +6,7 @@
 
 #include "Area.h"
 #include "Point.h"
+#include "AreaDxf.h"
 
 #if _DEBUG
 #undef _DEBUG
@@ -107,6 +108,14 @@ static bool holes_linked()
 #endif
 }
 
+static CArea AreaFromDxf(const char* filepath)
+{
+	CArea area;
+	AreaDxfRead dxf(&area, filepath);
+	dxf.DoRead();
+	return area;
+}
+
 static void append_point(CCurve& c, const Point& p)
 {
 	c.m_vertices.push_back(CVertex(p));
@@ -136,6 +145,11 @@ boost::python::list SplitArea(const CArea& a)
 		alist.append(a);
     }
 	return alist;
+}
+
+void dxfArea(CArea& area, const char* str)
+{
+	area = CArea();
 }
 
 BOOST_PYTHON_MODULE(area) {
@@ -210,4 +224,5 @@ BOOST_PYTHON_MODULE(area) {
     bp::def("set_units", set_units);
     bp::def("get_units", get_units);
     bp::def("holes_linked", holes_linked);
+    bp::def("AreaFromDxf", AreaFromDxf);
 }
