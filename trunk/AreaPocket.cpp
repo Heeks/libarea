@@ -59,7 +59,7 @@ void CurveTree::GetCurve(CCurve& output)
 		const CVertex& vertex = *It;
 		if(prev_p)
 		{
-			SpanPtr span(*prev_p, vertex);
+			Span span(*prev_p, vertex);
 
 			// order inners on this span
 			std::multimap<double, CurveTree*> ordered_inners;

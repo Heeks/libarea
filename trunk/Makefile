@@ -10,7 +10,7 @@ LIBS    = -lstdc++ `python-config --libs`
 CFLAGS  = -Wall -I/usr/include `python-config --includes` -I./ -I./kbool/include -g -fPIC
 
 LIBNAME	= area
-LIBOBJS	= Arc.o Area.o AreaBoolean.o AreaDxf.o AreaOrderer.o AreaPocket.o booleng.o Circle.o dxf.o graph.o graphlst.o instonly.o line.o link.o lpoint.o node.o PythonStuff.o record.o scanbeam.o
+LIBOBJS	= Arc.o Area.o AreaBoolean.o AreaDxf.o AreaOrderer.o AreaPocket.o booleng.o Circle.o Construction.o Curve.o dxf.o Finite.o graph.o graphlst.o instonly.o kurve.o line.o link.o lpoint.o Matrix.o node.o offset.o PythonStuff.o record.o scanbeam.o
 LIBDIR	= .libs/
 LIBOUT	= $(LIBDIR)$(LIBNAME).so
 
@@ -58,7 +58,16 @@ booleng.o: kbool/src/booleng.cpp
 Circle.o: Circle.cpp
 	$(CC) -c $? ${CFLAGS} -o $@
 
+Construction.o: kurve/Construction.cpp
+	$(CC) -c $? ${CFLAGS} -o $@
+
+Curve.o: Curve.cpp
+	$(CC) -c $? ${CFLAGS} -o $@
+
 dxf.o: dxf.cpp
+	$(CC) -c $? ${CFLAGS} -o $@
+
+Finite.o: kurve/Finite.cpp
 	$(CC) -c $? ${CFLAGS} -o $@
 
 graph.o: kbool/src/graph.cpp
@@ -70,6 +79,9 @@ graphlst.o: kbool/src/graphlst.cpp
 instonly.o: kbool/src/instonly.cpp
 	$(CC) -c $? ${CFLAGS} -o $@
 
+kurve.o: kurve/kurve.cpp
+	$(CC) -c $? ${CFLAGS} -o $@
+
 line.o: kbool/src/line.cpp
 	$(CC) -c $? ${CFLAGS} -o $@
 
@@ -79,7 +91,13 @@ link.o: kbool/src/link.cpp
 lpoint.o: kbool/src/lpoint.cpp
 	$(CC) -c $? ${CFLAGS} -o $@
 
+Matrix.o: kurve/Matrix.cpp
+	$(CC) -c $? ${CFLAGS} -o $@
+
 node.o: kbool/src/node.cpp
+	$(CC) -c $? ${CFLAGS} -o $@
+
+offset.o: kurve/offset.cpp
 	$(CC) -c $? ${CFLAGS} -o $@
 
 PythonStuff.o: PythonStuff.cpp

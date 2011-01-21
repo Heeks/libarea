@@ -12,6 +12,7 @@ public:
 	Point():x(0.0), y(0.0){}
 	Point(double X, double Y):x(X), y(Y){}
 	Point(const double* p):x(p[0]), y(p[1]){}
+	Point(const Point& p0, const Point& p1):x(p1.x - p0.x), y(p1.y - p0.y){} // vector from p0 to p1
 
 	static double tolerance;
 
@@ -23,7 +24,7 @@ public:
 	bool operator!=(const Point &p)const{ return !(*this == p);}
 	double dist(const Point &p)const{double dx = p.x - x; double dy = p.y - y; return sqrt(dx*dx + dy*dy);}
     double length()const;
-    void normalize();
+    double normalize();
 	double operator*(const Point &p)const{return (x * p.x + y * p.y);}// dot product
 	double operator^(const Point &p)const{return (x * p.y - y * p.x);}// cross product m0.m1.sin a = v0 ^ v1
 	Point operator~(void)const{return Point(-y, x);}// perp to left
