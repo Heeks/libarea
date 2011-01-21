@@ -152,19 +152,76 @@ void dxfArea(CArea& area, const char* str)
 	area = CArea();
 }
 
+boost::python::list getCurveSpans(const CCurve& c)
+{
+	boost::python::list span_list;
+	const Point *prev_p = NULL;
+
+	int span_index = 0;
+	for(std::list<CVertex>::const_iterator VIt = c.m_vertices.begin(); VIt != c.m_vertices.end(); VIt++)
+	{
+		const CVertex& vertex = *VIt;
+
+		if(prev_p)
+		{
+			span_list.append(Span(*prev_p, vertex));
+		}
+		prev_p = &(vertex.m_p);
+	}
+
+	return span_list;
+}
+
+Span getFirstCurveSpan(const CCurve& c)
+{
+	if(c.m_vertices.size() < 2)return Span();
+
+	std::list<CVertex>::const_iterator VIt = c.m_vertices.begin();
+	const Point &p = (*VIt).m_p;
+	VIt++;
+	return Span(p, *VIt, true);
+}
+
+Span getLastCurveSpan(const CCurve& c)
+{
+	if(c.m_vertices.size() < 2)return Span();
+
+	std::list<CVertex>::const_reverse_iterator VIt = c.m_vertices.rbegin();
+	const CVertex &v = (*VIt);
+	VIt++;
+
+	return Span((*VIt).m_p, v, c.m_vertices.size() == 2);
+}
+
+bp::tuple TangentialArc(const Point &p0, const Point &p1, const Point &v0)
+{
+  Point c;
+  int dir;
+  tangential_arc(p0, p1, v0, c, dir);
+
+  return bp::make_tuple(c, dir);
+}
+
 BOOST_PYTHON_MODULE(area) {
 	bp::class_<Point>("Point") 
         .def(bp::init<double, double>())
         .def(bp::init<Point>())
         .def(bp::other<double>() * bp::self)
         .def(bp::self * bp::other<double>())
+        .def(bp::self / bp::other<double>())
         .def(bp::self * bp::other<Point>())
         .def(bp::self - bp::other<Point>())
         .def(bp::self + bp::other<Point>())
-        .def("dist", &Point::dist)
+        .def(bp::self ^ bp::other<Point>())
+        .def(bp::self == bp::other<Point>())
+        .def(bp::self != bp::other<Point>())
+        .def(-bp::self)
+        .def(~bp::self)
         .def("dist", &Point::dist)
         .def("length", &Point::length)
         .def("normalize", &Point::normalize)
+		.def("Rotate", static_cast< void (Point::*)(double, double) >(&Point::Rotate))
+		.def("Rotate", static_cast< void (Point::*)(double) >(&Point::Rotate))
         .def_readwrite("x", &Point::x)
         .def_readwrite("y", &Point::y)
     ;
@@ -180,6 +237,23 @@ BOOST_PYTHON_MODULE(area) {
         .def_readwrite("user_data", &CVertex::m_user_data)
     ;
 
+	bp::class_<Span>("Span") 
+        .def(bp::init<Span>())
+        .def(bp::init<Point, CVertex, bool>())
+		.def("NearestPoint", static_cast< Point (Span::*)(const Point& p)const >(&Span::NearestPoint))
+		.def("NearestPoint", static_cast< Point (Span::*)(const Span& p, double *d)const >(&Span::NearestPoint))
+		.def("GetBox", &Span::GetBox)
+		.def("IncludedAngle", &Span::IncludedAngle)
+		.def("GetArea", &Span::GetArea)
+		.def("On", &Span::On)
+		.def("MidPerim", &Span::MidPerim)
+		.def("MidParam", &Span::MidParam)
+		.def("Length", &Span::Length)
+		.def("GetVector", &Span::GetVector)
+        .def_readwrite("p", &Span::m_p)
+		.def_readwrite("v", &Span::m_v)
+    ;
+
 	bp::class_<CCurve>("Curve") 
         .def(bp::init<CCurve>())
         .def("getVertices", &getVertices)
@@ -193,6 +267,17 @@ BOOST_PYTHON_MODULE(area) {
 		.def("LastVertex", &LastVertex)
 		.def("GetArea", &CCurve::GetArea)
 		.def("IsClockwise", &CCurve::IsClockwise)
+		.def("IsClosed", &CCurve::IsClosed)
+        .def("ChangeStart",&CCurve::ChangeStart)
+        .def("ChangeEnd",&CCurve::ChangeEnd)
+        .def("Offset",&CCurve::Offset)
+        .def("GetSpans",&getCurveSpans)
+        .def("GetFirstSpan",&getFirstCurveSpan)
+        .def("GetLastSpan",&getLastCurveSpan)
+        .def("Break",&CCurve::Break)
+        .def("Perim",&CCurve::Perim)
+        .def("PerimToPoint",&CCurve::PerimToPoint)
+        .def("PointToPerim",&CCurve::PointToPerim)
     ;
 
 	bp::class_<CBox>("Box") 
@@ -225,4 +310,5 @@ BOOST_PYTHON_MODULE(area) {
     bp::def("get_units", get_units);
     bp::def("holes_linked", holes_linked);
     bp::def("AreaFromDxf", AreaFromDxf);
+    bp::def("TangentialArc", TangentialArc);
 }

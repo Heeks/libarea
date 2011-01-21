@@ -212,7 +212,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\kurve\Construction.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Curve.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\dxf.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\kurve\Finite.cpp"
 				>
 			</File>
 			<File
@@ -228,6 +240,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\kurve\kurve.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\kbool\src\line.cpp"
 				>
 			</File>
@@ -240,7 +256,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\kurve\Matrix.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\kbool\src\node.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\kurve\offset.cpp"
 				>
 			</File>
 			<File
@@ -298,7 +322,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Curve.h"
+				>
+			</File>
+			<File
 				RelativePath=".\dxf.h"
+				>
+			</File>
+			<File
+				RelativePath=".\kurve\geometry.h"
 				>
 			</File>
 			<File

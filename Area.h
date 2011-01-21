@@ -5,81 +5,7 @@
 #ifndef AREA_HEADER
 #define AREA_HEADER
 
-#include <vector>
-#include <list>
-#include <math.h>
-#include "Point.h"
-#include "Box.h"
-
-class Line{
-public:
-	Point p0;
-	Point v;
-
-	// constructors
-	Line(const Point& P0, const Point& V);
-
-	double Dist(const Point& p)const;
-};
-
-class Arc;
-
-class CVertex
-{
-public:
-	int m_type; // 0 - line ( or start point ), 1 - anti-clockwise arc, -1 - clockwise arc
-	Point m_p; // end point
-	Point m_c; // centre point in absolute coordinates
-	int m_user_data;
-
-	CVertex():m_type(0), m_p(Point(0, 0)), m_c(Point(0,0)), m_user_data(0){}
-	CVertex(int type, const Point& p, const Point& c, int user_data = 0);
-	CVertex(const Point& p, int user_data = 0);
-};
-
-class SpanPtr
-{
-	Point NearestPointNotOnSpan(const Point& p)const;
-	double Parameter(const Point& p)const;
-	Point NearestPointToSpan(const SpanPtr& p, double &d)const;
-
-public:
-	bool m_start_span;
-	const Point& m_p;
-	const CVertex& m_v;
-	SpanPtr(const Point& p, const CVertex& v, bool start_span = false):m_p(p), m_v(v), m_start_span(start_span){}
-	Point NearestPoint(const Point& p)const;
-	Point NearestPoint(const SpanPtr& p, double *d = NULL)const;
-	void GetBox(CBox &box);
-	double IncludedAngle()const;
-	double GetArea()const;
-	bool On(const Point& p, double* t = NULL)const;
-	Point MidPerim(double d)const;
-	Point MidParam(double param)const;
-};
-
-class CCurve
-{
-	// a closed curve, please make sure you add an end point, the same as the start point
-
-protected:
-	bool CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& might_be_an_arc, Arc &arc);
-	void AddArcOrLines(bool check_for_arc, std::list<CVertex> &new_vertices, std::list<const CVertex*>& might_be_an_arc, Arc &arc, bool &arc_found, bool &arc_added);
-
-public:
-	std::list<CVertex> m_vertices;
-	void append(const CVertex& vertex);
-
-	void FitArcs();
-	Point NearestPoint(const Point& p)const;
-	Point NearestPoint(const CCurve& p, double *d = NULL)const;
-	Point NearestPoint(const SpanPtr& p, double *d = NULL)const;
-	void GetBox(CBox &box);
-	void Reverse();
-	double GetArea()const;
-	bool IsClockwise()const{return GetArea()>0;}
-	void ChangeStart(const Point &p);
-};
+#include "Curve.h"
 
 struct CAreaPocketParams
 {
@@ -114,6 +40,8 @@ public:
 	static double m_split_processing_length;
 	static bool m_set_processing_length_in_split;
 	static bool m_please_abort; // the user sets this from another thread, to tell MakeOnePocketCurve to finish with no result.
+
+	double arse;
 
 	void append(const CCurve& curve);
 	void Subtract(const CArea& a2);
