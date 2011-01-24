@@ -812,7 +812,7 @@ return;
 	}
 
 	void Span::SetProperties(bool returnProperties) {
-		if(returnSpanProperties = returnProperties) {
+		if((returnSpanProperties = returnProperties)) {
 			// return span properties
 			if(dir) {
 				// arc properties
@@ -833,7 +833,7 @@ return;
 				length = 0.0;
 				angle = 0.0;
 				if(radius > geoff_geometry::TOLERANCE) {
-					if(NullSpan = (p0.Dist(p1) <= geoff_geometry::TOLERANCE)) {
+					if((NullSpan = (p0.Dist(p1)) <= geoff_geometry::TOLERANCE)) {
 						dir = LINEAR;
 					}
 					else {

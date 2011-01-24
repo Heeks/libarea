@@ -157,7 +157,6 @@ boost::python::list getCurveSpans(const CCurve& c)
 	boost::python::list span_list;
 	const Point *prev_p = NULL;
 
-	int span_index = 0;
 	for(std::list<CVertex>::const_iterator VIt = c.m_vertices.begin(); VIt != c.m_vertices.end(); VIt++)
 	{
 		const CVertex& vertex = *VIt;

@@ -5,7 +5,7 @@
 #include "AreaDxf.h"
 #include "Area.h"
 
-AreaDxfRead::AreaDxfRead(CArea* area, const char* filepath):m_area(area), CDxfRead(filepath){}
+AreaDxfRead::AreaDxfRead(CArea* area, const char* filepath):CDxfRead(filepath), m_area(area){}
 
 void AreaDxfRead::StartCurveIfNecessary(const double* s)
 {

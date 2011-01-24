@@ -366,7 +366,7 @@ namespace geoff_geometry {
 	}
 
 	Circle::Circle( const Point& p, const Point& pc0){
-		if(ok = (p.ok && pc0.ok)) {
+		if((ok = (p.ok && pc0.ok))) {
 			pc = pc0;
 			radius = p.Dist(pc0);
 		}
@@ -786,7 +786,7 @@ namespace geoff_geometry {
 	Plane::Plane(double dist, const Vector3d& n) {
 		normal = n;
 		double mag = normal.normalise();
-		if(ok = (normal != NULL_VECTOR)) d = dist / mag;
+		if((ok = (normal != NULL_VECTOR))) d = dist / mag;
 	}
 
 	double Plane::Dist(const Point3d& p)const{

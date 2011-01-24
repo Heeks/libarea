@@ -50,7 +50,7 @@ public:
 	Point m_p;
 	CVertex m_v;
 	Span();
-	Span(const Point& p, const CVertex& v, bool start_span = false):m_p(p), m_v(v), m_start_span(start_span){}
+	Span(const Point& p, const CVertex& v, bool start_span = false):m_start_span(start_span), m_p(p), m_v(v){}
 	Point NearestPoint(const Point& p)const;
 	Point NearestPoint(const Span& p, double *d = NULL)const;
 	void GetBox(CBox &box);
