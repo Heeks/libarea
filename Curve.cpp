@@ -377,9 +377,9 @@ void CCurve::Break(const Point &p) {
 	// inserts a point, if it lies on the curve
 	const Point *prev_p = NULL;
 
-	for(std::list<CVertex>::const_iterator VIt = m_vertices.begin(); VIt != m_vertices.end(); VIt++)
+	for(std::list<CVertex>::iterator VIt = m_vertices.begin(); VIt != m_vertices.end(); VIt++)
 	{
-		const CVertex& vertex = *VIt;
+		CVertex& vertex = *VIt;
 
 		if(p == vertex.m_p)break; // point is already on a vertex
 
@@ -587,7 +587,7 @@ double CCurve::PointToPerim(const Point& p)const
 const Point Span::null_point = Point(0, 0);
 const CVertex Span::null_vertex = CVertex(Point(0, 0));
 
-Span::Span():m_p(null_point), m_v(null_vertex), m_start_span(false){}
+Span::Span():m_start_span(false), m_p(null_point), m_v(null_vertex){}
 
 Point Span::NearestPointNotOnSpan(const Point& p)const
 {
@@ -650,7 +650,6 @@ Point Span::MidParam(double param)const {
 	}
 	else {
 		Point v = m_p - m_v.m_c;
-		double radius = m_p.dist(m_v.m_c);
 		v.Rotate(param * IncludedAngle());
 		p = v + m_v.m_c;
 	}
