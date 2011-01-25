@@ -76,6 +76,7 @@ public:
 	void append(const CVertex& vertex);
 
 	void FitArcs();
+	void UnFitArcs();
 	Point NearestPoint(const Point& p)const;
 	Point NearestPoint(const CCurve& p, double *d = NULL)const;
 	Point NearestPoint(const Span& p, double *d = NULL)const;
@@ -87,10 +88,12 @@ public:
 	void ChangeStart(const Point &p);
 	void ChangeEnd(const Point &p);
 	bool Offset(double leftwards_value);
+	void OffsetForward(double forwards_value, bool refit_arcs = true); // for drag-knife compensation
 	void Break(const Point &p);
 	double Perim()const;
 	Point PerimToPoint(double perim)const;
 	double PointToPerim(const Point& p)const;
+	void GetSpans(std::list<Span> &spans)const;
 };
 
 void tangential_arc(const Point &p0, const Point &p1, const Point &v0, Point &c, int &dir);

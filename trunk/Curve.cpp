@@ -184,6 +184,98 @@ void CCurve::FitArcs()
 	}
 }
 
+void CCurve::UnFitArcs()
+{
+	std::list<Point> new_pts;
+
+	const CVertex* prev_vertex = NULL;
+	for(std::list<CVertex>::const_iterator It2 = m_vertices.begin(); It2 != m_vertices.end(); It2++)
+	{
+		const CVertex& vertex = *It2;
+		if(vertex.m_type == 0 || prev_vertex == NULL)
+		{
+			new_pts.push_back(vertex.m_p * CArea::m_units);
+		}
+		else
+		{
+			double phi,dphi,dx,dy;
+			int Segments;
+			int i;
+			double ang1,ang2,phit;
+
+			dx = (prev_vertex->m_p.x - vertex.m_c.x) * CArea::m_units;
+			dy = (prev_vertex->m_p.y - vertex.m_c.y) * CArea::m_units;
+
+			ang1=atan2(dy,dx);
+			if (ang1<0) ang1+=2.0*PI;
+			dx = (vertex.m_p.x - vertex.m_c.x) * CArea::m_units;
+			dy = (vertex.m_p.y - vertex.m_c.y) * CArea::m_units;
+			ang2=atan2(dy,dx);
+			if (ang2<0) ang2+=2.0*PI;
+
+			if (vertex.m_type == -1)
+			{ //clockwise
+				if (ang2 > ang1)
+					phit=2.0*PI-ang2+ ang1;
+				else
+					phit=ang1-ang2;
+			}
+			else
+			{ //counter_clockwise
+				if (ang1 > ang2)
+					phit=-(2.0*PI-ang1+ ang2);
+				else
+					phit=-(ang2-ang1);
+			}
+
+			//what is the delta phi to get an accurancy of aber
+			double radius = sqrt(dx*dx + dy*dy);
+			dphi=2*acos((radius-CArea::m_accuracy)/radius);
+
+			//set the number of segments
+			if (phit > 0)
+				Segments=(int)ceil(phit/dphi);
+			else
+				Segments=(int)ceil(-phit/dphi);
+
+			if (Segments < 1)
+				Segments=1;
+			if (Segments > 100)
+				Segments=100;
+
+			dphi=phit/(Segments);
+
+			double px = prev_vertex->m_p.x * CArea::m_units;
+			double py = prev_vertex->m_p.y * CArea::m_units;
+
+			for (i=1; i<=Segments; i++)
+			{
+				dx = px - vertex.m_c.x * CArea::m_units;
+				dy = py - vertex.m_c.y * CArea::m_units;
+				phi=atan2(dy,dx);
+
+				double nx = vertex.m_c.x * CArea::m_units + radius * cos(phi-dphi);
+				double ny = vertex.m_c.y * CArea::m_units + radius * sin(phi-dphi);
+
+				new_pts.push_back(Point(nx, ny));
+
+				px = nx;
+				py = ny;
+			}
+		}
+		prev_vertex = &vertex;
+	}
+
+	m_vertices.clear();
+
+	for(std::list<Point>::iterator It = new_pts.begin(); It != new_pts.end(); It++)
+	{
+		Point &pt = *It;
+		CVertex vertex(0, pt / CArea::m_units, Point(0.0, 0.0));
+		m_vertices.push_back(vertex);
+	}
+}
+
 Point CCurve::NearestPoint(const Point& p)const
 {
 	double best_dist = 0.0;
@@ -504,6 +596,79 @@ bool CCurve::Offset(double leftwards_value)
 	}
 
 	return success;
+}
+
+void CCurve::GetSpans(std::list<Span> &spans)const
+{
+	const Point *prev_p = NULL;
+	for(std::list<CVertex>::const_iterator It = m_vertices.begin(); It != m_vertices.end(); It++)
+	{
+		const CVertex& vertex = *It;
+		if(prev_p)
+		{
+			spans.push_back(Span(*prev_p, vertex));
+		}
+		prev_p = &(vertex.m_p);
+	}
+}
+
+void CCurve::OffsetForward(double forwards_value, bool refit_arcs)
+{
+	// for drag-knife compensation
+
+	// replace arcs with lines
+	UnFitArcs();
+
+	std::list<Span> spans;
+	GetSpans(spans);
+
+	m_vertices.clear();
+
+	// shift all the spans
+	for(std::list<Span>::iterator It = spans.begin(); It != spans.end(); It++)
+	{
+		Span &span = *It;
+		Point v = span.GetVector(0.0);
+		v.normalize();
+		Point shift = v * forwards_value;
+		span.m_p = span.m_p + shift;
+		span.m_v.m_p = span.m_v.m_p + shift;
+	}
+
+	// loop through the shifted spans
+	for(std::list<Span>::iterator It = spans.begin(); It != spans.end();)
+	{
+		Span &span = *It;
+		Point v = span.GetVector(0.0);
+		v.normalize();
+
+		// add the span
+		if(It == spans.begin())m_vertices.push_back(span.m_p);
+		m_vertices.push_back(span.m_v.m_p);
+
+		It++;
+		if(It != spans.end())
+		{
+			Span &next_span = *It;
+			Point nv = next_span.GetVector(0.0);
+			nv.normalize();
+			double sin_angle = v ^ nv;
+			bool sharp_corner = ( fabs(sin_angle) > 0.5 ); // angle > 30 degrees
+
+			if(sharp_corner)
+			{
+				// add an arc to the start of the next span
+				int arc_type = ((sin_angle > 0) ? 1 : (-1));
+				Point centre = span.m_v.m_p - v * forwards_value;
+				m_vertices.push_back(CVertex(arc_type, next_span.m_p, centre));
+			}
+		}
+	}
+
+	if(refit_arcs)
+		FitArcs(); // find the arcs again
+	else
+		UnFitArcs(); // convert those little arcs added to lines
 }
 
 double CCurve::Perim()const

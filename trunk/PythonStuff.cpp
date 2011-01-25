@@ -270,6 +270,7 @@ BOOST_PYTHON_MODULE(area) {
         .def("ChangeStart",&CCurve::ChangeStart)
         .def("ChangeEnd",&CCurve::ChangeEnd)
         .def("Offset",&CCurve::Offset)
+        .def("OffsetForward",&CCurve::OffsetForward)
         .def("GetSpans",&getCurveSpans)
         .def("GetFirstSpan",&getFirstCurveSpan)
         .def("GetLastSpan",&getLastCurveSpan)
