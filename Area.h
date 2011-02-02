@@ -41,8 +41,6 @@ public:
 	static bool m_set_processing_length_in_split;
 	static bool m_please_abort; // the user sets this from another thread, to tell MakeOnePocketCurve to finish with no result.
 
-	double arse;
-
 	void append(const CCurve& curve);
 	void Subtract(const CArea& a2);
 	void Intersect(const CArea& a2);
