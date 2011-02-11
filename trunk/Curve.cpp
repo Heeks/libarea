@@ -1,4 +1,6 @@
 // Curve.cpp
+// Copyright 2011, Dan Heeks
+// This program is released under the BSD license. See the file COPYING for details.
 
 #include "Curve.h"
 #include "Circle.h"
@@ -488,6 +490,25 @@ void CCurve::Break(const Point &p) {
 		}
 		prev_p = &(vertex.m_p);
 	}
+}
+
+void CCurve::RemoveTinySpans() {
+	CCurve new_curve;
+
+	std::list<CVertex>::const_iterator VIt = m_vertices.begin(); 
+	new_curve.m_vertices.push_back(*VIt);
+	VIt++;
+
+	for(; VIt != m_vertices.end(); VIt++)
+	{
+		const CVertex& vertex = *VIt;
+
+		if(vertex.m_type != 0 || new_curve.m_vertices.back().m_p.dist(vertex.m_p) > Point::tolerance)
+		{
+			new_curve.m_vertices.push_back(vertex);
+		}
+	}
+	*this = new_curve;
 }
 
 void CCurve::ChangeEnd(const Point &p) {

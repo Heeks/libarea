@@ -1,6 +1,7 @@
 // PythonStuff.h
 
-// written by Dan Heeks, February 6th 2009, license: GPL version 3 http://www.gnu.org/licenses/gpl-3.0.txt
+// Copyright 2011, Dan Heeks
+// This program is released under the BSD license. See the file COPYING for details.
 
 extern void Message(const char*);
 
