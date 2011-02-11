@@ -1,6 +1,7 @@
 // AreaBoolean.cpp
 
 // implements CArea methods using Klaas Holwerda's Boolean
+//    Licence: see kboollicense.txt 
 
 #include "Area.h"
 #include "kbool/include/_lnk_itr.h"

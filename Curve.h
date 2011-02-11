@@ -1,6 +1,6 @@
 // Curve.h
-
-// written by Dan Heeks, 2011, license: GPL version 3 http://www.gnu.org/licenses/gpl-3.0.txt
+// Copyright 2011, Dan Heeks
+// This program is released under the BSD license. See the file COPYING for details.
 
 #pragma once
 
@@ -94,6 +94,7 @@ public:
 	Point PerimToPoint(double perim)const;
 	double PointToPerim(const Point& p)const;
 	void GetSpans(std::list<Span> &spans)const;
+	void RemoveTinySpans();
 };
 
 void tangential_arc(const Point &p0, const Point &p1, const Point &v0, Point &c, int &dir);

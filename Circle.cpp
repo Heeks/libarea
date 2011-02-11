@@ -1,6 +1,6 @@
 // Circle.cpp
-
-// copyright Dan Heeks, September 3rd 2009, license: GPL version 3 http://www.gnu.org/licenses/gpl-3.0.txt
+// Copyright 2011, Dan Heeks
+// This program is released under the BSD license. See the file COPYING for details.
 
 #include "Circle.h"
 

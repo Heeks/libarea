@@ -1,6 +1,6 @@
 // PythonStuff.cpp
-
-// written by Dan Heeks, February 6th 2009, license: GPL version 3 http://www.gnu.org/licenses/gpl-3.0.txt
+// Copyright 2011, Dan Heeks
+// This program is released under the BSD license. See the file COPYING for details.
 
 #include "PythonStuff.h"
 
@@ -278,6 +278,8 @@ BOOST_PYTHON_MODULE(area) {
         .def("Perim",&CCurve::Perim)
         .def("PerimToPoint",&CCurve::PerimToPoint)
         .def("PointToPerim",&CCurve::PointToPerim)
+		.def("FitArcs",&CCurve::FitArcs)
+        .def("UnFitArcs",&CCurve::UnFitArcs)
     ;
 
 	bp::class_<CBox>("Box") 
