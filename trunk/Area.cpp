@@ -488,30 +488,42 @@ void CArea::MakePocketToolpath(std::list<CCurve> &curve_list, const CAreaPocketP
 	double current_offset = params.tool_radius + params.extra_offset;
 
 	a_offset.Offset(current_offset);
-        
-    if(params.use_zig_zag)
+
+	if(params.only_cut_first_offset)
 	{
-		curve_list_for_zigs = &curve_list;
-		zigzag(a_offset);
+		for(std::list<CCurve>::iterator It = a_offset.m_curves.begin(); It != a_offset.m_curves.end(); It++)
+		{
+			CCurve& curve = *It;
+			curve_list.push_back(curve);
+		}
 	}
 	else
 	{
-		std::list<CArea> m_areas;
-		a_offset.Split(m_areas);
-		if(CArea::m_please_abort)return;
-		if(m_areas.size() == 0)
+
+		if(params.use_zig_zag)
 		{
-			CArea::m_processing_done += CArea::m_single_area_processing_length;
-			return;
+			curve_list_for_zigs = &curve_list;
+			zigzag(a_offset);
 		}
-
-		CArea::m_single_area_processing_length /= m_areas.size();
-
-		for(std::list<CArea>::iterator It = m_areas.begin(); It != m_areas.end(); It++)
+		else
 		{
-			CArea &a2 = *It;
-			curve_list.push_back(CCurve());
-			a2.MakeOnePocketCurve(curve_list.back(), params);
+			std::list<CArea> m_areas;
+			a_offset.Split(m_areas);
+			if(CArea::m_please_abort)return;
+			if(m_areas.size() == 0)
+			{
+				CArea::m_processing_done += CArea::m_single_area_processing_length;
+				return;
+			}
+
+			CArea::m_single_area_processing_length /= m_areas.size();
+
+			for(std::list<CArea>::iterator It = m_areas.begin(); It != m_areas.end(); It++)
+			{
+				CArea &a2 = *It;
+				curve_list.push_back(CCurve());
+				a2.MakeOnePocketCurve(curve_list.back(), params);
+			}
 		}
 	}
 }
