@@ -15,7 +15,8 @@ struct CAreaPocketParams
 	bool from_center;
 	bool use_zig_zag;
 	double zig_angle;
-	CAreaPocketParams(double Tool_radius, double Extra_offset, double Stepover, bool From_center, bool Use_zig_zag, double Zig_angle)
+	bool only_cut_first_offset;
+	CAreaPocketParams(double Tool_radius, double Extra_offset, double Stepover, bool From_center, bool Use_zig_zag, double Zig_angle, bool Only_cut_first_offset)
 	{
 		tool_radius = Tool_radius;
 		extra_offset = Extra_offset;
@@ -23,6 +24,7 @@ struct CAreaPocketParams
 		from_center = From_center;
 		use_zig_zag = Use_zig_zag;
 		zig_angle = Zig_angle;
+		only_cut_first_offset = Only_cut_first_offset;
 	}
 };
 
