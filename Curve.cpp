@@ -536,6 +536,10 @@ void CCurve::ChangeEnd(const Point &p) {
 				if(p != vertex.m_p)new_curve.m_vertices.push_back(vertex);
 			}
 		}
+		else
+		{
+			new_curve.m_vertices.push_back(vertex);
+		}
 		prev_p = &(vertex.m_p);
 	}
 
