@@ -95,6 +95,7 @@ public:
 	double PointToPerim(const Point& p)const;
 	void GetSpans(std::list<Span> &spans)const;
 	void RemoveTinySpans();
+	void operator+=(const CCurve& p);
 };
 
 void tangential_arc(const Point &p0, const Point &p1, const Point &v0, Point &c, int &dir);

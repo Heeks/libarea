@@ -81,15 +81,6 @@ bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& migh
 	Point p2(might_be_an_arc.back()->m_p);
 	Circle c(p0, p1, p2);
 
-	if(Line(p0, p2 - p0).Dist(p1) <= Point::tolerance)
-		return false;
-
-	const double max_arc_radius = 1.0 / Point::tolerance;
-	if (c.m_radius > max_arc_radius)
-	{
-		return(false);	// We don't want to produce an arc whose radius is too large.
-	}
-
 	const CVertex* current_vt = &prev_vt;
 	double accuracy = CArea::m_accuracy * 1.4 / CArea::m_units;
 	for(std::list<const CVertex*>::iterator It = might_be_an_arc.begin(); It != might_be_an_arc.end(); It++)
@@ -122,7 +113,15 @@ void CCurve::AddArcOrLines(bool check_for_arc, std::list<CVertex> &new_vertices,
 	{
 		if(arc_found)
 		{
-			new_vertices.push_back(CVertex(arc.m_dir ? 1:-1, arc.m_e, arc.m_c, arc.m_user_data));
+			if(arc.AlmostALine())
+			{
+				new_vertices.push_back(CVertex(arc.m_dir ? 1:-1, arc.m_e, arc.m_c, arc.m_user_data));
+			}
+			else
+			{
+				new_vertices.push_back(CVertex(arc.m_dir ? 1:-1, arc.m_e, arc.m_c, arc.m_user_data));
+			}
+
 			arc_added = true;
 			arc_found = false;
 			const CVertex* back_vt = might_be_an_arc.back();
@@ -772,6 +771,25 @@ double CCurve::PointToPerim(const Point& p)const
 		prev_p = &(vertex.m_p);
 	}
 	return perim_at_best_dist;
+}
+
+void CCurve::operator+=(const CCurve& curve)
+{
+	for(std::list<CVertex>::const_iterator It = curve.m_vertices.begin(); It != curve.m_vertices.end(); It++)
+	{
+		const CVertex &vt = *It;
+		if(It == curve.m_vertices.begin())
+		{
+			if((m_vertices.size() == 0) || (It->m_p != m_vertices.back().m_p))
+			{
+				m_vertices.push_back(CVertex(It->m_p));
+			}
+		}
+		else
+		{
+			m_vertices.push_back(vt);
+		}
+	}
 }
 
 const Point Span::null_point = Point(0, 0);

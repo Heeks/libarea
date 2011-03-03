@@ -6,7 +6,7 @@
 #include "clipper.hpp"
 using namespace clipper;
 
-bool CArea::HolesLinked()const{ return false; }
+bool CArea::HolesLinked(){ return false; }
 
 static const double PI = 3.1415926535897932;
 
