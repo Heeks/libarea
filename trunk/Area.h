@@ -7,24 +7,31 @@
 
 #include "Curve.h"
 
+enum PocketMode
+{
+	SpiralPocketMode,
+	ZigZagPocketMode,
+	SingleOffsetPocketMode,
+	ZigZagThenSingleOffsetPocketMode,
+};
+
 struct CAreaPocketParams
 {
 	double tool_radius;
 	double extra_offset;
 	double stepover;
 	bool from_center;
-	bool use_zig_zag;
+	PocketMode mode;
 	double zig_angle;
 	bool only_cut_first_offset;
-	CAreaPocketParams(double Tool_radius, double Extra_offset, double Stepover, bool From_center, bool Use_zig_zag, double Zig_angle, bool Only_cut_first_offset)
+	CAreaPocketParams(double Tool_radius, double Extra_offset, double Stepover, bool From_center, PocketMode Mode, double Zig_angle)
 	{
 		tool_radius = Tool_radius;
 		extra_offset = Extra_offset;
 		stepover = Stepover;
 		from_center = From_center;
-		use_zig_zag = Use_zig_zag;
+		mode = Mode;
 		zig_angle = Zig_angle;
-		only_cut_first_offset = Only_cut_first_offset;
 	}
 };
 
@@ -55,8 +62,8 @@ public:
 	void Reorder();
 	void MakePocketToolpath(std::list<CCurve> &toolpath, const CAreaPocketParams &params)const;
 	void SplitAndMakePocketToolpath(std::list<CCurve> &toolpath, const CAreaPocketParams &params)const;
-	void MakeOnePocketCurve(CCurve& curve, const CAreaPocketParams &params)const;
-	bool HolesLinked()const;
+	void MakeOnePocketCurve(std::list<CCurve> &curve_list, const CAreaPocketParams &params)const;
+	static bool HolesLinked();
 	void Split(std::list<CArea> &m_areas)const;
 	double GetArea(bool always_add = false)const;
 };

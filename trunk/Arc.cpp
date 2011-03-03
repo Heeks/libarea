@@ -4,6 +4,7 @@
 // This program is released under the BSD license. See the file COPYING for details.
 
 #include "Arc.h"
+#include "Curve.h"
 
 void Arc::SetDirWithPoint(const Point& p)
 {
@@ -16,7 +17,7 @@ void Arc::SetDirWithPoint(const Point& p)
 	else m_dir = true;
 }
 
-double Arc::IncludedAngle()
+double Arc::IncludedAngle()const
 {
 	double angs = atan2(m_s.y - m_c.y, m_s.x - m_c.x);
 	double ange = atan2(m_e.y - m_c.y, m_e.x - m_c.x);
@@ -32,4 +33,33 @@ double Arc::IncludedAngle()
 	}
 
 	return fabs(ange - angs);
+}
+
+bool Arc::AlmostALine()const
+{
+	Point mid_point = MidParam(0.5);
+	if(Line(m_s, m_e - m_s).Dist(mid_point) <= Point::tolerance)
+		return true;
+
+	const double max_arc_radius = 1.0 / Point::tolerance;
+	double radius = m_c.dist(m_s);
+	if (radius > max_arc_radius)
+	{
+		return true;	// We don't want to produce an arc whose radius is too large.
+	}
+
+	return false;
+}
+
+Point Arc::MidParam(double param)const {
+	/// returns a point which is 0-1 along arc
+	if(fabs(param) < 0.00000000000001)return m_s;
+	if(fabs(param - 1.0) < 0.00000000000001)return m_e;
+
+	Point p;
+	Point v = m_s - m_c;
+	v.Rotate(param * IncludedAngle());
+	p = v + m_c;
+
+	return p;
 }

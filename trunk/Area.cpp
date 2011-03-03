@@ -489,41 +489,38 @@ void CArea::MakePocketToolpath(std::list<CCurve> &curve_list, const CAreaPocketP
 
 	a_offset.Offset(current_offset);
 
-	if(params.only_cut_first_offset)
+	if(params.mode == ZigZagPocketMode || params.mode == ZigZagThenSingleOffsetPocketMode)
 	{
+		curve_list_for_zigs = &curve_list;
+		zigzag(a_offset);
+	}
+	else if(params.mode == SpiralPocketMode)
+	{
+		std::list<CArea> m_areas;
+		a_offset.Split(m_areas);
+		if(CArea::m_please_abort)return;
+		if(m_areas.size() == 0)
+		{
+			CArea::m_processing_done += CArea::m_single_area_processing_length;
+			return;
+		}
+
+		CArea::m_single_area_processing_length /= m_areas.size();
+
+		for(std::list<CArea>::iterator It = m_areas.begin(); It != m_areas.end(); It++)
+		{
+			CArea &a2 = *It;
+			a2.MakeOnePocketCurve(curve_list, params);
+		}
+	}
+
+	if(params.mode == SingleOffsetPocketMode || params.mode == ZigZagThenSingleOffsetPocketMode)
+	{
+		// add the single offset too
 		for(std::list<CCurve>::iterator It = a_offset.m_curves.begin(); It != a_offset.m_curves.end(); It++)
 		{
 			CCurve& curve = *It;
 			curve_list.push_back(curve);
-		}
-	}
-	else
-	{
-
-		if(params.use_zig_zag)
-		{
-			curve_list_for_zigs = &curve_list;
-			zigzag(a_offset);
-		}
-		else
-		{
-			std::list<CArea> m_areas;
-			a_offset.Split(m_areas);
-			if(CArea::m_please_abort)return;
-			if(m_areas.size() == 0)
-			{
-				CArea::m_processing_done += CArea::m_single_area_processing_length;
-				return;
-			}
-
-			CArea::m_single_area_processing_length /= m_areas.size();
-
-			for(std::list<CArea>::iterator It = m_areas.begin(); It != m_areas.end(); It++)
-			{
-				CArea &a2 = *It;
-				curve_list.push_back(CCurve());
-				a2.MakeOnePocketCurve(curve_list.back(), params);
-			}
 		}
 	}
 }

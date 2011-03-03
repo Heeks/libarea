@@ -7,7 +7,7 @@
 #include "kbool/include/_lnk_itr.h"
 #include "kbool/include/booleng.h"
 
-bool CArea::HolesLinked()const{ return true; }
+bool CArea::HolesLinked(){ return true; }
 
 static void ArmBoolEng( Bool_Engine* booleng )
 {

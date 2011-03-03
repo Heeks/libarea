@@ -18,5 +18,7 @@ public:
 	Arc(const Point& s, const Point& e, const Point& c, bool dir, int user_data):m_s(s), m_e(e), m_c(c), m_dir(dir), m_user_data(user_data){}
 
 	void SetDirWithPoint(const Point& p); // set m_dir, such that this point lies between m_s and m_e
-	double IncludedAngle(); // always > 0
+	double IncludedAngle()const; // always > 0
+	bool AlmostALine()const;
+	Point MidParam(double param)const;
 };

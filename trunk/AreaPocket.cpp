@@ -26,6 +26,9 @@ public:
 
 class CurveTree
 {
+	static std::list<CurveTree*> to_do_list_for_MakeOffsets;
+	void MakeOffsets2();
+
 public:
 	Point point_on_parent;
 	CCurve curve;
@@ -39,6 +42,8 @@ public:
 	void MakeOffsets();
 	void GetCurve(CCurve& curve);
 };
+
+std::list<CurveTree*> CurveTree::to_do_list_for_MakeOffsets;
 
 void CurveTree::GetCurve(CCurve& output)
 {
@@ -113,7 +118,7 @@ void CurveTree::GetCurve(CCurve& output)
 	}
 }
 
-void CurveTree::MakeOffsets()
+void CurveTree::MakeOffsets2()
 {
 	// make offsets
 
@@ -174,14 +179,154 @@ void CurveTree::MakeOffsets()
 		if(CArea::m_please_abort)return;
 		inners.back().curve.ChangeStart(first_curve_point);
 		if(CArea::m_please_abort)return;
-		inners.back().MakeOffsets(); // recursive
+		//inners.back().MakeOffsets2(); // recursive
+		to_do_list_for_MakeOffsets.push_back(&(inners.back())); // do it later, in a while loop
 		if(CArea::m_please_abort)return;
 	}
 }
 
-void CArea::MakeOnePocketCurve(CCurve& curve, const CAreaPocketParams &params)const
+void CurveTree::MakeOffsets()
+{
+	to_do_list_for_MakeOffsets.push_back(this);
+
+	while(to_do_list_for_MakeOffsets.size() > 0)
+	{
+		CurveTree* curve_tree = to_do_list_for_MakeOffsets.front();
+		to_do_list_for_MakeOffsets.pop_front();
+		curve_tree->MakeOffsets2();
+	}
+}
+
+void recur(std::list<CArea> &arealist, const CArea& a1, const CAreaPocketParams &params, int level)
+{
+	//if(level > 3)return;
+
+    // this makes arealist by recursively offsetting a1 inwards
+    
+	if(a1.m_curves.size() == 0)
+		return;
+    
+	if(params.from_center)
+		arealist.push_front(a1);
+	else
+		arealist.push_back(a1);
+
+    CArea a_offset = a1;
+    a_offset.Offset(params.stepover);
+    
+    // split curves into new areas
+	if(CArea::HolesLinked())
+	{
+		for(std::list<CCurve>::iterator It = a_offset.m_curves.begin(); It != a_offset.m_curves.end(); It++)
+		{
+            CArea a2;
+			a2.m_curves.push_back(*It);
+            recur(arealist, a2, params, level + 1);
+		}
+	}
+    else
+	{
+        // split curves into new areas
+		a_offset.Reorder();
+        CArea* a2 = NULL;
+       
+		for(std::list<CCurve>::iterator It = a_offset.m_curves.begin(); It != a_offset.m_curves.end(); It++)
+		{
+			CCurve& curve = *It;
+			if(curve.IsClockwise())
+			{
+				if(a2 != NULL)
+					a2->m_curves.push_back(curve);
+			}
+			else
+			{
+				if(a2 != NULL)
+					recur(arealist, *a2, params, level + 1);
+				else
+					a2 = new CArea();
+                a2->m_curves.push_back(curve);
+			}
+		}
+
+		if(a2 != NULL)
+			recur(arealist, *a2, params, level + 1);
+	}
+}
+
+static CArea make_obround(const Point& p0, const Point& p1, double radius)
+{
+    Point dir = p1 - p0;
+    double d = dir.length();
+    dir.normalize();
+    Point right(dir.y, -dir.x);
+    CArea obround;
+    CCurve c;
+	if(fabs(radius) < 0.0000001)radius = (radius > 0.0) ? 0.002 : (-0.002);
+    Point vt0 = p0 + right * radius;
+    Point vt1 = p1 + right * radius;
+    Point vt2 = p1 - right * radius;
+    Point vt3 = p0 - right * radius;
+	c.append(vt0);
+    c.append(vt1);
+    c.append(CVertex(1, vt2, p1));
+    c.append(vt3);
+    c.append(CVertex(1, vt0, p0));
+    obround.append(c);
+    return obround;
+}
+    
+static bool feed_possible(const CArea &area_for_feed_possible, const Point& p0, const Point& p1, double tool_radius)
+{
+    CArea obround = make_obround(p0, p1, tool_radius);
+    obround.Subtract(area_for_feed_possible);
+	return obround.m_curves.size() == 0;
+}
+
+void CArea::MakeOnePocketCurve(std::list<CCurve> &curve_list, const CAreaPocketParams &params)const
 {
 	if(CArea::m_please_abort)return;
+#if 0  // simple offsets with feed or rapid joins
+	CArea area_for_feed_possible = *this;
+
+	area_for_feed_possible.Offset(-params.tool_radius - 0.01);
+	CArea a_offset = *this;
+
+	std::list<CArea> arealist;
+	recur(arealist, a_offset, params, 0);
+
+	bool first = true;
+
+	for(std::list<CArea>::iterator It = arealist.begin(); It != arealist.end(); It++)
+	{
+		CArea& area = *It;
+		for(std::list<CCurve>::iterator It = area.m_curves.begin(); It != area.m_curves.end(); It++)
+		{
+			CCurve& curve = *It;
+			if(!first)
+			{
+				// try to join these curves with a feed move, if possible and not too long
+				CCurve &prev_curve = curve_list.back();
+				const Point &prev_p = prev_curve.m_vertices.back().m_p;
+				const Point &next_p = curve.m_vertices.front().m_p;
+
+				if(feed_possible(area_for_feed_possible, prev_p, next_p, params.tool_radius))
+				{
+					// join curves
+					prev_curve += curve;
+				}
+				else
+				{
+					curve_list.push_back(curve);
+				}
+			}
+			else
+			{
+				curve_list.push_back(curve);
+			}
+			first = false;
+		}
+	}
+#else
 	pocket_params = &params;
 	if(m_curves.size() == 0)
 	{
@@ -215,8 +360,9 @@ void CArea::MakeOnePocketCurve(CCurve& curve, const CAreaPocketParams &params)co
 	if(CArea::m_please_abort)return;
 	CArea::m_processing_done = CArea::m_after_MakeOffsets_length;
 
-
-	top_level.GetCurve(curve);
+	curve_list.push_back(CCurve());
+	top_level.GetCurve(curve_list.back());
 	CArea::m_processing_done += CArea::m_single_area_processing_length * 0.1;
+#endif
 }
 

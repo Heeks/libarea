@@ -125,7 +125,7 @@ boost::python::list MakePocketToolpath(const CArea& a, double tool_radius, doubl
 {
 	std::list<CCurve> toolpath;
 
-	CAreaPocketParams params(tool_radius, extra_offset, stepover, from_center, use_zig_zag, zig_angle, false);
+	CAreaPocketParams params(tool_radius, extra_offset, stepover, from_center, use_zig_zag ? ZigZagPocketMode : SpiralPocketMode, zig_angle);
 	a.SplitAndMakePocketToolpath(toolpath, params);
 
 	boost::python::list clist;
