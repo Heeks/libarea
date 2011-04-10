@@ -115,7 +115,7 @@ void CCurve::AddArcOrLines(bool check_for_arc, std::list<CVertex> &new_vertices,
 		{
 			if(arc.AlmostALine())
 			{
-				new_vertices.push_back(CVertex(arc.m_dir ? 1:-1, arc.m_e, arc.m_c, arc.m_user_data));
+				new_vertices.push_back(CVertex(arc.m_e, arc.m_user_data));
 			}
 			else
 			{
