@@ -15,12 +15,25 @@ class IslandAndOffset
 public:
 	const CCurve* island;
 	CArea offset;
+	std::list<CCurve> island_inners;
+
 	IslandAndOffset(const CCurve* Island)
 	{
 		island = Island;
+
 		offset.m_curves.push_back(*island);
 		offset.m_curves.back().Reverse();
 		offset.Offset(-pocket_params->stepover);
+
+		if(offset.m_curves.size() > 1)
+		{
+			for(std::list<CCurve>::iterator It = offset.m_curves.begin(); It != offset.m_curves.end(); It++)
+			{
+				if(It == offset.m_curves.begin())continue;
+				island_inners.push_back(*It);
+			}
+			offset.m_curves.resize(1);
+		}
 	}
 };
 
@@ -168,6 +181,20 @@ void CurveTree::MakeOffsets2()
 			if(CArea::m_please_abort)return;
 			inners.back()->curve.ChangeStart(island_point);
 			if(CArea::m_please_abort)return;
+
+			// add the island offset's inner curves
+			for(std::list<CCurve>::const_iterator It2 = island_and_offset->island_inners.begin(); It2 != island_and_offset->island_inners.end(); It2++)
+			{
+				const CCurve& island_inner = *It2;
+				inners.back()->inners.push_back(new CurveTree(island_inner));
+				inners.back()->inners.back()->point_on_parent = inners.back()->curve.NearestPoint(island_inner);
+				if(CArea::m_please_abort)return;
+				Point island_point = island_inner.NearestPoint(inners.back()->inners.back()->point_on_parent);
+				if(CArea::m_please_abort)return;
+				inners.back()->inners.back()->curve.ChangeStart(island_point);
+				if(CArea::m_please_abort)return;
+			}
+
 			smaller.Subtract(island_and_offset->offset);
 			if(CArea::m_please_abort)return;
 			It = offset_islands.erase(It);

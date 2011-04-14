@@ -101,11 +101,7 @@ static double get_units()
 
 static bool holes_linked()
 {
-#ifdef CLIPPER_NOT_KBOOL
-	return false;
-#else
-	return true;
-#endif
+	return CArea::HolesLinked();
 }
 
 static CArea AreaFromDxf(const char* filepath)
