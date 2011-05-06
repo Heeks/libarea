@@ -1,0 +1,86 @@
+#Makefile for libarea
+
+PREFIX	= /usr/local
+HOME	= .
+CXX     = g++
+CC      = gcc
+LD      = g++
+LDFLAGS = -shared -rdynamic `python-config --ldflags` -lboost_python
+LIBS    = -lstdc++ `python-config --libs`
+CFLAGS  = -Wall -I/usr/include `python-config --includes` -I./  -g -fPIC -I./clipper
+
+LIBNAME	= area
+LIBOBJS	= Arc.o Area.o AreaClipper.o AreaDxf.o AreaOrderer.o AreaPocket.o  Circle.o Construction.o Curve.o dxf.o Finite.o  kurve.o Matrix.o offset.o PythonStuff.o clipper.o
+LIBDIR	= .libs/
+LIBOUT	= $(LIBDIR)$(LIBNAME).so
+
+all:	$(LIBOUT)
+
+$(LIBOUT): $(LIBOBJS)
+	@-mkdir -p $(LIBDIR)
+	$(LD) $(LDFLAGS) -fPIC -Wl,-soname,libarea.so.0 $(LIBOBJS) -o $(LIBOUT) $(LIBS)
+
+clean:
+	@-rm -f $(LIBOBJS)
+	@-rm -f $(LIBOUT)
+	@-rmdir $(LIBDIR)
+
+install: $(LIBOUT)
+	strip $^
+	chmod 644 $^
+	mkdir -p $(DESTDIR)`python -c "from distutils.sysconfig import get_python_lib; print get_python_lib(plat_specific=1, standard_lib=0, prefix='$(PREFIX)')"`
+	install $^ $(DESTDIR)`python -c "from distutils.sysconfig import get_python_lib; print get_python_lib(plat_specific=1, standard_lib=0, prefix='$(PREFIX)')"`
+
+test:
+	python test.py
+
+Arc.o: Arc.cpp
+	$(CC) -c $? ${CFLAGS} -o $@
+
+Area.o: Area.cpp
+	$(CC) -c $? ${CFLAGS} -o $@
+
+AreaClipper.o: AreaClipper.cpp
+	$(CC) -c $? ${CFLAGS} -o $@
+
+AreaDxf.o: AreaDxf.cpp
+	$(CC) -c $? ${CFLAGS} -o $@
+
+AreaOrderer.o: AreaOrderer.cpp
+	$(CC) -c $? ${CFLAGS} -o $@
+
+AreaPocket.o: AreaPocket.cpp
+	$(CC) -c $? ${CFLAGS} -o $@
+
+Circle.o: Circle.cpp
+	$(CC) -c $? ${CFLAGS} -o $@
+
+clipper.o: ./clipper/clipper.cpp
+	$(CC) -c $? ${CFLAGS} -o $@
+
+Construction.o: kurve/Construction.cpp
+	$(CC) -c $? ${CFLAGS} -o $@
+
+Curve.o: Curve.cpp
+	$(CC) -c $? ${CFLAGS} -o $@
+
+dxf.o: dxf.cpp
+	$(CC) -c $? ${CFLAGS} -o $@
+
+Finite.o: kurve/Finite.cpp
+	$(CC) -c $? ${CFLAGS} -o $@
+
+kurve.o: kurve/kurve.cpp
+	$(CC) -c $? ${CFLAGS} -o $@
+
+Matrix.o: kurve/Matrix.cpp
+	$(CC) -c $? ${CFLAGS} -o $@
+
+offset.o: kurve/offset.cpp
+	$(CC) -c $? ${CFLAGS} -o $@
+
+PythonStuff.o: PythonStuff.cpp
+	$(CC) -c $? ${CFLAGS} -o $@
+
+
+
