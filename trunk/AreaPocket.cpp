@@ -7,6 +7,7 @@
 #include "Area.h"
 
 #include <map>
+#include <set>
 
 static const CAreaPocketParams* pocket_params = NULL;
 
@@ -16,6 +17,7 @@ public:
 	const CCurve* island;
 	CArea offset;
 	std::list<CCurve> island_inners;
+	std::list<IslandAndOffset*> touching_offsets;
 
 	IslandAndOffset(const CCurve* Island)
 	{
@@ -23,7 +25,9 @@ public:
 
 		offset.m_curves.push_back(*island);
 		offset.m_curves.back().Reverse();
+
 		offset.Offset(-pocket_params->stepover);
+
 
 		if(offset.m_curves.size() > 1)
 		{
@@ -31,6 +35,7 @@ public:
 			{
 				if(It == offset.m_curves.begin())continue;
 				island_inners.push_back(*It);
+				island_inners.back().Reverse();
 			}
 			offset.m_curves.resize(1);
 		}
@@ -41,6 +46,7 @@ class CurveTree
 {
 	static std::list<CurveTree*> to_do_list_for_MakeOffsets;
 	void MakeOffsets2();
+	static std::list<CurveTree*> islands_added;
 
 public:
 	Point point_on_parent;
@@ -55,6 +61,7 @@ public:
 
 	void MakeOffsets();
 };
+std::list<CurveTree*> CurveTree::islands_added;
 
 class GetCurveItem
 {
@@ -87,13 +94,14 @@ void GetCurveItem::GetCurve(CCurve& output)
 		inners_to_visit.push_back(*It2);
 	}
 
-	const Point* prev_p = NULL;
+	const CVertex* prev_vertex = NULL;
+
 	for(std::list<CVertex>::iterator It = curve_tree->curve.m_vertices.begin(); It != curve_tree->curve.m_vertices.end(); It++)
 	{
 		const CVertex& vertex = *It;
-		if(prev_p)
+		if(prev_vertex)
 		{
-			Span span(*prev_p, vertex);
+			Span span(prev_vertex->m_p, vertex);
 
 			// order inners on this span
 			std::multimap<double, CurveTree*> ordered_inners;
@@ -117,7 +125,7 @@ void GetCurveItem::GetCurve(CCurve& output)
 			for(std::multimap<double, CurveTree*>::iterator It2 = ordered_inners.begin(); It2 != ordered_inners.end(); It2++)
 			{
 				CurveTree& inner = *(It2->second);
-				if(inner.point_on_parent != back().m_p)
+				if(inner.point_on_parent.dist(back().m_p) > 0.01/CArea::m_units)
 				{
 					output.m_vertices.insert(this->EndIt, CVertex(vertex.m_type, inner.point_on_parent, vertex.m_c));
 				}
@@ -132,7 +140,7 @@ void GetCurveItem::GetCurve(CCurve& output)
 
 			if(back().m_p != vertex.m_p)output.m_vertices.insert(this->EndIt, vertex);
 		}
-		prev_p = &vertex.m_p;
+		prev_vertex = &vertex;
 	}
 
 	if(CArea::m_please_abort)return;
@@ -152,6 +160,36 @@ void GetCurveItem::GetCurve(CCurve& output)
 		GetCurveItem::to_do_list.push_back(GetCurveItem(&inner, VIt));
 
 	}
+}
+
+class IslandAndOffsetLink
+{
+public:
+	const IslandAndOffset* island_and_offset;
+	CurveTree* add_to;
+	IslandAndOffsetLink(const IslandAndOffset* i, CurveTree* a){island_and_offset = i; add_to = a;}
+};
+
+static Point GetNearestPoint(CurveTree* curve_tree, std::list<CurveTree*> &islands_added, const CCurve &test_curve, CurveTree** best_curve_tree)
+{
+	// find nearest point to test_curve, from curve and all the islands in 
+	double best_dist;
+	Point best_point = curve_tree->curve.NearestPoint(test_curve, &best_dist);
+	*best_curve_tree = curve_tree;
+	for(std::list<CurveTree*>::iterator It = islands_added.begin(); It != islands_added.end(); It++)
+	{
+		CurveTree* island = *It;
+		double dist;
+		Point p = island->curve.NearestPoint(test_curve, &dist);
+		if(dist < best_dist)
+		{
+			*best_curve_tree = island;
+			best_point = p;
+			best_dist = dist;
+		}
+	}
+
+	return best_point;
 }
 
 void CurveTree::MakeOffsets2()
@@ -175,6 +213,7 @@ void CurveTree::MakeOffsets2()
 		else
 		{
 			inners.push_back(new CurveTree(*island_and_offset->island));
+			islands_added.push_back(inners.back());
 			inners.back()->point_on_parent = curve.NearestPoint(*island_and_offset->island);
 			if(CArea::m_please_abort)return;
 			Point island_point = island_and_offset->island->NearestPoint(inners.back()->point_on_parent);
@@ -192,12 +231,66 @@ void CurveTree::MakeOffsets2()
 				Point island_point = island_inner.NearestPoint(inners.back()->inners.back()->point_on_parent);
 				if(CArea::m_please_abort)return;
 				inners.back()->inners.back()->curve.ChangeStart(island_point);
+				to_do_list_for_MakeOffsets.push_back(inners.back()->inners.back()); // do it later, in a while loop
 				if(CArea::m_please_abort)return;
 			}
 
 			smaller.Subtract(island_and_offset->offset);
+
+			std::set<const IslandAndOffset*> added;
+
+			std::list<IslandAndOffsetLink> touching_list;
+			for(std::list<IslandAndOffset*>::const_iterator It2 = island_and_offset->touching_offsets.begin(); It2 != island_and_offset->touching_offsets.end(); It2++)
+			{
+				const IslandAndOffset* touching = *It2;
+				touching_list.push_back(IslandAndOffsetLink(touching, inners.back()));
+				added.insert(touching);
+			}
+
+			while(touching_list.size() > 0)
+			{
+				IslandAndOffsetLink touching = touching_list.front();
+				touching_list.pop_front();
+				touching.add_to->inners.push_back(new CurveTree(*touching.island_and_offset->island));
+				islands_added.push_back(touching.add_to->inners.back());
+				touching.add_to->inners.back()->point_on_parent = touching.add_to->curve.NearestPoint(*touching.island_and_offset->island);
+				Point island_point = touching.island_and_offset->island->NearestPoint(touching.add_to->inners.back()->point_on_parent);
+				touching.add_to->inners.back()->curve.ChangeStart(island_point);
+				smaller.Subtract(touching.island_and_offset->offset);
+
+				// add the island offset's inner curves
+				for(std::list<CCurve>::const_iterator It2 = touching.island_and_offset->island_inners.begin(); It2 != touching.island_and_offset->island_inners.end(); It2++)
+				{
+					const CCurve& island_inner = *It2;
+					touching.add_to->inners.back()->inners.push_back(new CurveTree(island_inner));
+					touching.add_to->inners.back()->inners.back()->point_on_parent = touching.add_to->inners.back()->curve.NearestPoint(island_inner);
+					if(CArea::m_please_abort)return;
+					Point island_point = island_inner.NearestPoint(touching.add_to->inners.back()->inners.back()->point_on_parent);
+					if(CArea::m_please_abort)return;
+					touching.add_to->inners.back()->inners.back()->curve.ChangeStart(island_point);
+					to_do_list_for_MakeOffsets.push_back(touching.add_to->inners.back()->inners.back()); // do it later, in a while loop
+					if(CArea::m_please_abort)return;
+				}
+
+				for(std::list<IslandAndOffset*>::const_iterator It2 = touching.island_and_offset->touching_offsets.begin(); It2 != touching.island_and_offset->touching_offsets.end(); It2++)
+				{
+					if(added.find(*It2)==added.end() && ((*It2) != island_and_offset))
+					{
+						touching_list.push_back(IslandAndOffsetLink(*It2, touching.add_to->inners.back()));
+						added.insert(*It2);
+					}
+				}
+			}
+
 			if(CArea::m_please_abort)return;
 			It = offset_islands.erase(It);
+
+			for(std::set<const IslandAndOffset*>::iterator It2 = added.begin(); It2 != added.end(); It2++)
+			{
+				const IslandAndOffset* i = *It2;
+				offset_islands.remove(i);
+			}
+
 			if(offset_islands.size() == 0)break;
 			It = offset_islands.begin();
 		}
@@ -213,24 +306,28 @@ void CurveTree::MakeOffsets2()
 	{
 		CArea& separate_area = *It;
 		CCurve& first_curve = separate_area.m_curves.front();
-		inners.push_back(new CurveTree(first_curve));
+
+		CurveTree* nearest_curve_tree = NULL;
+		Point near_point = GetNearestPoint(this, islands_added, first_curve, &nearest_curve_tree);
+
+		nearest_curve_tree->inners.push_back(new CurveTree(first_curve));
 
 		for(std::list<const IslandAndOffset*>::iterator It = offset_islands.begin(); It != offset_islands.end();It++)
 		{
 			const IslandAndOffset* island_and_offset = *It;
 			if(GetOverlapType(island_and_offset->offset, separate_area) == eInside)
-				inners.back()->offset_islands.push_back(island_and_offset);
+				nearest_curve_tree->inners.back()->offset_islands.push_back(island_and_offset);
 			if(CArea::m_please_abort)return;
 		}
 
-		inners.back()->point_on_parent = curve.NearestPoint(first_curve);
+		nearest_curve_tree->inners.back()->point_on_parent = near_point;
+
 		if(CArea::m_please_abort)return;
-		Point first_curve_point = first_curve.NearestPoint(inners.back()->point_on_parent);
+		Point first_curve_point = first_curve.NearestPoint(nearest_curve_tree->inners.back()->point_on_parent);
 		if(CArea::m_please_abort)return;
-		inners.back()->curve.ChangeStart(first_curve_point);
+		nearest_curve_tree->inners.back()->curve.ChangeStart(first_curve_point);
 		if(CArea::m_please_abort)return;
-		//inners.back().MakeOffsets2(); // recursive
-		to_do_list_for_MakeOffsets.push_back(inners.back()); // do it later, in a while loop
+		to_do_list_for_MakeOffsets.push_back(nearest_curve_tree->inners.back()); // do it later, in a while loop
 		if(CArea::m_please_abort)return;
 	}
 }
@@ -238,6 +335,7 @@ void CurveTree::MakeOffsets2()
 void CurveTree::MakeOffsets()
 {
 	to_do_list_for_MakeOffsets.push_back(this);
+	islands_added.clear();
 
 	while(to_do_list_for_MakeOffsets.size() > 0)
 	{
@@ -332,6 +430,26 @@ static bool feed_possible(const CArea &area_for_feed_possible, const Point& p0, 
 	return obround.m_curves.size() == 0;
 }
 
+void MarkOverlappingOffsetIslands(std::list<IslandAndOffset> &offset_islands)
+{
+	for(std::list<IslandAndOffset>::iterator It1 = offset_islands.begin(); It1 != offset_islands.end(); It1++)
+	{
+		std::list<IslandAndOffset>::iterator It2 = It1;
+		It2++;
+		for(;It2 != offset_islands.end(); It2++)
+		{
+			IslandAndOffset &o1 = *It1;
+			IslandAndOffset &o2 = *It2;
+
+			if(GetOverlapType(o1.offset, o2.offset) == eCrossing)
+			{
+				o1.touching_offsets.push_back(&o2);
+				o2.touching_offsets.push_back(&o1);
+			}
+		}
+	}
+}
+
 void CArea::MakeOnePocketCurve(std::list<CCurve> &curve_list, const CAreaPocketParams &params)const
 {
 	if(CArea::m_please_abort)return;
@@ -398,6 +516,8 @@ void CArea::MakeOnePocketCurve(std::list<CCurve> &curve_list, const CAreaPocketP
 			if(m_please_abort)return;
 		}
 	}
+
+	MarkOverlappingOffsetIslands(offset_islands);
 
 	CArea::m_processing_done += CArea::m_single_area_processing_length * 0.1;
 

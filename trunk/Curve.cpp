@@ -54,7 +54,7 @@ void CCurve::append(const CVertex& vertex)
 	m_vertices.push_back(vertex);
 }
 
-bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& might_be_an_arc, Arc &arc)
+bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& might_be_an_arc, Arc &arc_returned)
 {
 	// this examines the vertices in might_be_an_arc
 	// if they do fit an arc, set arc to be the arc that they fit and return true
@@ -92,14 +92,47 @@ bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& migh
 		current_vt = vt;
 	}
 
+	Arc arc;
 	arc.m_c = c.m_c;
 	arc.m_s = prev_vt.m_p;
 	arc.m_e = might_be_an_arc.back()->m_p;
 	arc.SetDirWithPoint(might_be_an_arc.front()->m_p);
 	arc.m_user_data = might_be_an_arc.back()->m_user_data;
 
+	double angs = atan2(arc.m_s.y - arc.m_c.y, arc.m_s.x - arc.m_c.x);
+	double ange = atan2(arc.m_e.y - arc.m_c.y, arc.m_e.x - arc.m_c.x);
+	if(arc.m_dir)
+	{
+		// make sure ange > angs
+		if(ange < angs)ange += 6.2831853071795864;
+	}
+	else
+	{
+		// make sure angs > ange
+		if(angs < ange)angs += 6.2831853071795864;
+	}
+
 	if(arc.IncludedAngle() >= 3.15)return false; // We don't want full arcs, so limit to about 180 degrees
 
+	for(std::list<const CVertex*>::iterator It = might_be_an_arc.begin(); It != might_be_an_arc.end(); It++)
+	{
+		const CVertex* vt = *It;
+		double angp = atan2(vt->m_p.y - arc.m_c.y, vt->m_p.x - arc.m_c.x);
+		if(arc.m_dir)
+		{
+			// make sure angp > angs
+			if(angp < angs)angp += 6.2831853071795864;
+			if(angp > ange)return false;
+		}
+		else
+		{
+			// make sure angp > ange
+			if(angp < ange)angp += 6.2831853071795864;
+			if(angp > angs)return false;
+		}
+	}
+
+	arc_returned = arc;
 	return true;
 }
 
@@ -199,69 +232,72 @@ void CCurve::UnFitArcs()
 		}
 		else
 		{
-			double phi,dphi,dx,dy;
-			int Segments;
-			int i;
-			double ang1,ang2,phit;
-
-			dx = (prev_vertex->m_p.x - vertex.m_c.x) * CArea::m_units;
-			dy = (prev_vertex->m_p.y - vertex.m_c.y) * CArea::m_units;
-
-			ang1=atan2(dy,dx);
-			if (ang1<0) ang1+=2.0*PI;
-			dx = (vertex.m_p.x - vertex.m_c.x) * CArea::m_units;
-			dy = (vertex.m_p.y - vertex.m_c.y) * CArea::m_units;
-			ang2=atan2(dy,dx);
-			if (ang2<0) ang2+=2.0*PI;
-
-			if (vertex.m_type == -1)
-			{ //clockwise
-				if (ang2 > ang1)
-					phit=2.0*PI-ang2+ ang1;
-				else
-					phit=ang1-ang2;
-			}
-			else
-			{ //counter_clockwise
-				if (ang1 > ang2)
-					phit=-(2.0*PI-ang1+ ang2);
-				else
-					phit=-(ang2-ang1);
-			}
-
-			//what is the delta phi to get an accurancy of aber
-			double radius = sqrt(dx*dx + dy*dy);
-			dphi=2*acos((radius-CArea::m_accuracy)/radius);
-
-			//set the number of segments
-			if (phit > 0)
-				Segments=(int)ceil(phit/dphi);
-			else
-				Segments=(int)ceil(-phit/dphi);
-
-			if (Segments < 1)
-				Segments=1;
-			if (Segments > 100)
-				Segments=100;
-
-			dphi=phit/(Segments);
-
-			double px = prev_vertex->m_p.x * CArea::m_units;
-			double py = prev_vertex->m_p.y * CArea::m_units;
-
-			for (i=1; i<=Segments; i++)
+			if(vertex.m_p != prev_vertex->m_p)
 			{
-				dx = px - vertex.m_c.x * CArea::m_units;
-				dy = py - vertex.m_c.y * CArea::m_units;
-				phi=atan2(dy,dx);
+				double phi,dphi,dx,dy;
+				int Segments;
+				int i;
+				double ang1,ang2,phit;
 
-				double nx = vertex.m_c.x * CArea::m_units + radius * cos(phi-dphi);
-				double ny = vertex.m_c.y * CArea::m_units + radius * sin(phi-dphi);
+				dx = (prev_vertex->m_p.x - vertex.m_c.x) * CArea::m_units;
+				dy = (prev_vertex->m_p.y - vertex.m_c.y) * CArea::m_units;
 
-				new_pts.push_back(Point(nx, ny));
+				ang1=atan2(dy,dx);
+				if (ang1<0) ang1+=2.0*PI;
+				dx = (vertex.m_p.x - vertex.m_c.x) * CArea::m_units;
+				dy = (vertex.m_p.y - vertex.m_c.y) * CArea::m_units;
+				ang2=atan2(dy,dx);
+				if (ang2<0) ang2+=2.0*PI;
 
-				px = nx;
-				py = ny;
+				if (vertex.m_type == -1)
+				{ //clockwise
+					if (ang2 > ang1)
+						phit=2.0*PI-ang2+ ang1;
+					else
+						phit=ang1-ang2;
+				}
+				else
+				{ //counter_clockwise
+					if (ang1 > ang2)
+						phit=-(2.0*PI-ang1+ ang2);
+					else
+						phit=-(ang2-ang1);
+				}
+
+				//what is the delta phi to get an accurancy of aber
+				double radius = sqrt(dx*dx + dy*dy);
+				dphi=2*acos((radius-CArea::m_accuracy)/radius);
+
+				//set the number of segments
+				if (phit > 0)
+					Segments=(int)ceil(phit/dphi);
+				else
+					Segments=(int)ceil(-phit/dphi);
+
+				if (Segments < 1)
+					Segments=1;
+				if (Segments > 100)
+					Segments=100;
+
+				dphi=phit/(Segments);
+
+				double px = prev_vertex->m_p.x * CArea::m_units;
+				double py = prev_vertex->m_p.y * CArea::m_units;
+
+				for (i=1; i<=Segments; i++)
+				{
+					dx = px - vertex.m_c.x * CArea::m_units;
+					dy = py - vertex.m_c.y * CArea::m_units;
+					phi=atan2(dy,dx);
+
+					double nx = vertex.m_c.x * CArea::m_units + radius * cos(phi-dphi);
+					double ny = vertex.m_c.y * CArea::m_units + radius * sin(phi-dphi);
+
+					new_pts.push_back(Point(nx, ny));
+
+					px = nx;
+					py = ny;
+				}
 			}
 		}
 		prev_vertex = &vertex;
