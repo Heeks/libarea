@@ -212,9 +212,9 @@ static void make_zig_curve(const CCurve& input_curve, double y0, double y)
 		test_y_point(i, vertex.m_p, bottom_left, bottom_left_found, bottom_left_index, y0, rightward_for_zigs);
 	}
 
-	int start_index;
-	int end_index;
-	int zag_end_index;
+	int start_index = 0;
+	int end_index = 0;
+	int zag_end_index = 0;
 
 	if(bottom_left_found)start_index = bottom_left_index;
 	else if(top_left_found)start_index = top_left_index;

@@ -39,6 +39,8 @@ static void AddVertex(const CVertex& vertex, const CVertex* prev_vertex)
 	}
 	else
 	{
+		if(vertex.m_p != prev_vertex->m_p)
+		{
 		double phi,dphi,dx,dy;
 		int Segments;
 		int i;
@@ -103,12 +105,13 @@ static void AddVertex(const CVertex& vertex, const CVertex* prev_vertex)
 			px = nx;
 			py = ny;
 		}
+		}
 	}
 }
 
 static bool IsPolygonClockwise(const TPolygon& p)
 {
-#if 0
+#if 1
 	double area = 0.0;
 	unsigned int s = p.size();
 	for(unsigned int i = 0; i<s; i++)
@@ -116,8 +119,8 @@ static bool IsPolygonClockwise(const TPolygon& p)
 		int im1 = i-1;
 		if(im1 < 0)im1 += s;
 
-		const TDoublePoint &pt0 = p[im1];
-		const TDoublePoint &pt1 = p[i];
+		DoublePoint pt0(p[im1]);
+		DoublePoint pt1(p[i]);
 
 		area += 0.5 * (pt1.X - pt0.X) * (pt0.Y + pt1.Y);
 	}
@@ -354,6 +357,7 @@ void CArea::Offset(double inwards_value)
 	MakePolyPoly(*this, pp, false);
 	OffsetWithLoops(pp, pp2, inwards_value * m_units);
 	SetFromResult(*this, pp2, false);
+	this->Reorder();
 }
 
 void UnFitArcs(CCurve &curve)
