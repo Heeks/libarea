@@ -30,11 +30,10 @@ public:
 	Point m_p; // end point
 	Point m_c; // centre point in absolute coordinates
 	int m_user_data;
-    float m_feed_rate;
 
-	CVertex():m_type(0), m_p(Point(0, 0)), m_c(Point(0,0)), m_user_data(0),m_feed_rate(0){}
-	CVertex(int type, const Point& p, const Point& c, int user_data = 0, float feed_rate = 0);
-	CVertex(const Point& p, int user_data = 0, float feed_rate = 0);
+	CVertex():m_type(0), m_p(Point(0, 0)), m_c(Point(0,0)), m_user_data(0){}
+	CVertex(int type, const Point& p, const Point& c, int user_data = 0);
+	CVertex(const Point& p, int user_data = 0);
 };
 
 class Span
