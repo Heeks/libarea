@@ -225,11 +225,13 @@ BOOST_PYTHON_MODULE(area) {
         .def(bp::init<CVertex>())
         .def(bp::init<int, Point, Point>())
         .def(bp::init<Point>())
-        .def(bp::init<int, Point, Point, int>())
+        .def(bp::init<int, Point, Point, int, float>())
         .def_readwrite("type", &CVertex::m_type)
         .def_readwrite("p", &CVertex::m_p)
         .def_readwrite("c", &CVertex::m_c)
         .def_readwrite("user_data", &CVertex::m_user_data)
+        .def_readwrite("feed_rate", &CVertex::m_feed_rate)
+
     ;
 
 	bp::class_<Span>("Span") 
