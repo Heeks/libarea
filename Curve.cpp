@@ -41,11 +41,11 @@ double Line::Dist(const Point& p)const
 	return pn.dist(p);
 }
 
-CVertex::CVertex(int type, const Point& p, const Point& c, int user_data,float feed_rate):m_type(type), m_p(p), m_c(c), m_user_data(user_data),m_feed_rate(feed_rate)
+CVertex::CVertex(int type, const Point& p, const Point& c, int user_data):m_type(type), m_p(p), m_c(c), m_user_data(user_data)
 {
 }
 
-CVertex::CVertex(const Point& p, int user_data, float feed_rate):m_type(0), m_p(p), m_c(0.0, 0.0), m_user_data(user_data),m_feed_rate(0.0)
+CVertex::CVertex(const Point& p, int user_data):m_type(0), m_p(p), m_c(0.0, 0.0), m_user_data(user_data)
 {
 }
 
@@ -414,28 +414,20 @@ void CCurve::Reverse()
 
 double CCurve::GetArea()const
 {
- double area = 0.0;
-	
- Point prev_p = Point(0, 0);
-	
- bool prev_p_valid = false;
-	
- for(std::list<CVertex>::const_iterator It = m_vertices.begin(); It != m_vertices.end(); It++)
-
+	double area = 0.0;
+	Point prev_p = Point(0, 0);
+	bool prev_p_valid = false;
+	for(std::list<CVertex>::const_iterator It = m_vertices.begin(); It != m_vertices.end(); It++)
 	{
-    const CVertex& vertex = *It;
-		
-    if(prev_p_valid)
-{
-area += Span(prev_p, vertex).GetArea();}
-		
-    prev_p = vertex.m_p;
-
-    prev_p_valid = true;
-	
-    }
-	
-    return area;
+		const CVertex& vertex = *It;
+		if(prev_p_valid)
+		{
+			area += Span(prev_p, vertex).GetArea();
+		}
+		prev_p = vertex.m_p;
+		prev_p_valid = true;
+	}
+	return area;
 }
 
 bool CCurve::IsClosed()const
