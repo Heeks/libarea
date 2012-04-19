@@ -49,7 +49,7 @@ Point CArea::NearestPoint(const Point& p)const
 	return best_point;
 }
 
-void CArea::GetBox(CBox &box)
+void CArea::GetBox(CBox2D &box)
 {
 	for(std::list<CCurve>::iterator It = m_curves.begin(); It != m_curves.end(); It++)
 	{
@@ -406,7 +406,7 @@ static void zigzag(const CArea &input_a)
 	CArea a(input_a);
     rotate_area(a);
     
-    CBox b;
+    CBox2D b;
 	a.GetBox(b);
     
     double x0 = b.MinX() - 1.0;

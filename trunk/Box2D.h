@@ -1,4 +1,4 @@
-// Box.h
+// Box2D.h
 // Copyright (c) 2009, Dan Heeks
 // This program is released under the BSD license. See the file COPYING for details.
 
@@ -7,16 +7,16 @@
 #include <string.h>	// for memcpy() prototype
 #include <math.h>	// for sqrt() prototype
 
-class CBox{
+class CBox2D{
 public:
 	Point m_minxy;
 	Point m_maxxy;
 	bool m_valid;
 
-	CBox():m_valid(false){}
-	CBox(const Point& minxy, const Point& maxxy):m_minxy(minxy), m_maxxy(maxxy), m_valid(true){}
+	CBox2D():m_valid(false){}
+	CBox2D(const Point& minxy, const Point& maxxy):m_minxy(minxy), m_maxxy(maxxy), m_valid(true){}
 
-	bool operator==( const CBox & rhs ) const
+	bool operator==( const CBox2D & rhs ) const
 	{
 		if(m_minxy != rhs.m_minxy)return false;
 		if(m_maxxy != rhs.m_maxxy)return false;
@@ -25,7 +25,7 @@ public:
 		return(true);
 	}
 
-	bool operator!=( const CBox & rhs ) const { return(! (*this == rhs)); }
+	bool operator!=( const CBox2D & rhs ) const { return(! (*this == rhs)); }
 
 
 	void Insert(const Point &p){ // insert a point
@@ -43,7 +43,7 @@ public:
 		}
 	}
 
-	void Insert(const CBox& b){
+	void Insert(const CBox2D& b){
 		if(b.m_valid){
 			if(m_valid){
 				if(b.m_minxy.x < m_minxy.x)m_minxy.x = b.m_minxy.x;

@@ -54,11 +54,13 @@ public:
 	void Subtract(const CArea& a2);
 	void Intersect(const CArea& a2);
 	void Union(const CArea& a2);
+	void Xor(const CArea& a2);
 	void Offset(double inwards_value);
+	void Thicken(double value);
 	void FitArcs();
 	unsigned int num_curves(){return m_curves.size();}
 	Point NearestPoint(const Point& p)const;
-	void GetBox(CBox &box);
+	void GetBox(CBox2D &box);
 	void Reorder();
 	void MakePocketToolpath(std::list<CCurve> &toolpath, const CAreaPocketParams &params)const;
 	void SplitAndMakePocketToolpath(std::list<CCurve> &toolpath, const CAreaPocketParams &params)const;
