@@ -242,6 +242,82 @@ static void OffsetWithLoops(const TPolyPolygon &pp, TPolyPolygon &pp_new, double
 	}
 }
 
+static void MakeObround(const Point &pt0, const CVertex &vt1, double radius)
+{
+	Span span(pt0, vt1);
+	Point forward0 = span.GetVector(0.0);
+	Point forward1 = span.GetVector(1.0);
+	Point right0(forward0.y, -forward0.x);
+	Point right1(forward1.y, -forward1.x);
+	right0.normalize();
+	right1.normalize();
+
+	CVertex v0(pt0 + right0 * radius);
+	CVertex v1(vt1.m_type, vt1.m_p + right1 * radius, vt1.m_c);
+	CVertex v2(1, vt1.m_p + right1 * -radius, vt1.m_p);
+	CVertex v3(-vt1.m_type, pt0 + right0 * -radius, vt1.m_c);
+	CVertex v4(1, pt0 + right0 * radius, pt0);
+
+	double save_units = CArea::m_units;
+	CArea::m_units = 1.0;
+
+	AddVertex(v0, NULL);
+	AddVertex(v1, &v0);
+	AddVertex(v2, &v1);
+	AddVertex(v3, &v2);
+	AddVertex(v4, &v3);
+
+	CArea::m_units = save_units;
+}
+
+static void OffsetSpansWithObrounds(const CArea& area, TPolyPolygon &pp_new, double radius)
+{
+	Clipper c;
+
+
+	for(std::list<CCurve>::const_iterator It = area.m_curves.begin(); It != area.m_curves.end(); It++)
+	{
+		pts_for_AddVertex.clear();
+		const CCurve& curve = *It;
+		const CVertex* prev_vertex = NULL;
+		for(std::list<CVertex>::const_iterator It2 = curve.m_vertices.begin(); It2 != curve.m_vertices.end(); It2++)
+		{
+			const CVertex& vertex = *It2;
+			if(prev_vertex)
+			{
+				MakeObround(prev_vertex->m_p, vertex, radius);
+
+				TPolygon loopy_polygon;
+				loopy_polygon.reserve(pts_for_AddVertex.size());
+				for(std::list<DoublePoint>::iterator It = pts_for_AddVertex.begin(); It != pts_for_AddVertex.end(); It++)
+				{
+					loopy_polygon.push_back(It->int_point());
+				}
+				c.AddPolygon(loopy_polygon, ptSubject);
+				pts_for_AddVertex.clear();
+			}
+			prev_vertex = &vertex;
+		}
+	}
+
+	pp_new.clear();
+	c.Execute(ctUnion, pp_new, pftNonZero, pftNonZero);
+
+	// reverse all the resulting polygons
+	TPolyPolygon copy = pp_new;
+	pp_new.clear();
+	pp_new.resize(copy.size());
+	for(unsigned int i = 0; i < copy.size(); i++)
+	{
+		const TPolygon& p = copy[i];
+		TPolygon p_new;
+		p_new.resize(p.size());
+		int size_minus_one = p.size() - 1;
+		for(unsigned int j = 0; j < p.size(); j++)p_new[j] = p[size_minus_one - j];
+		pp_new[i] = p_new;
+	}
+}
+
 static void MakePolyPoly( const CArea& area, TPolyPolygon &pp, bool reverse = true ){
 	pp.clear();
 
@@ -351,12 +427,33 @@ void CArea::Union(const CArea& a2)
 	SetFromResult(*this, solution);
 }
 
+void CArea::Xor(const CArea& a2)
+{
+	Clipper c;
+	TPolyPolygon pp1, pp2;
+	MakePolyPoly(*this, pp1);
+	MakePolyPoly(a2, pp2);
+	c.AddPolygons(pp1, ptSubject);
+	c.AddPolygons(pp2, ptClip);
+	TPolyPolygon solution;
+	c.Execute(ctXor, solution);
+	SetFromResult(*this, solution);
+}
+
 void CArea::Offset(double inwards_value)
 {
 	TPolyPolygon pp, pp2;
 	MakePolyPoly(*this, pp, false);
 	OffsetWithLoops(pp, pp2, inwards_value * m_units);
 	SetFromResult(*this, pp2, false);
+	this->Reorder();
+}
+
+void CArea::Thicken(double value)
+{
+	TPolyPolygon pp;
+	OffsetSpansWithObrounds(*this, pp, value * m_units);
+	SetFromResult(*this, pp, false);
 	this->Reorder();
 }
 

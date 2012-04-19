@@ -54,7 +54,7 @@ void CCurve::append(const CVertex& vertex)
 	m_vertices.push_back(vertex);
 }
 
-bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& might_be_an_arc, Arc &arc_returned)
+bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& might_be_an_arc, CArc &arc_returned)
 {
 	// this examines the vertices in might_be_an_arc
 	// if they do fit an arc, set arc to be the arc that they fit and return true
@@ -92,7 +92,7 @@ bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& migh
 		current_vt = vt;
 	}
 
-	Arc arc;
+	CArc arc;
 	arc.m_c = c.m_c;
 	arc.m_s = prev_vt.m_p;
 	arc.m_e = might_be_an_arc.back()->m_p;
@@ -136,7 +136,7 @@ bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& migh
 	return true;
 }
 
-void CCurve::AddArcOrLines(bool check_for_arc, std::list<CVertex> &new_vertices, std::list<const CVertex*>& might_be_an_arc, Arc &arc, bool &arc_found, bool &arc_added)
+void CCurve::AddArcOrLines(bool check_for_arc, std::list<CVertex> &new_vertices, std::list<const CVertex*>& might_be_an_arc, CArc &arc, bool &arc_found, bool &arc_added)
 {
 	if(check_for_arc && CheckForArc(new_vertices.back(), might_be_an_arc, arc))
 	{
@@ -184,7 +184,7 @@ void CCurve::FitArcs()
 	std::list<CVertex> new_vertices;
 
 	std::list<const CVertex*> might_be_an_arc;
-	Arc arc;
+	CArc arc;
 	bool arc_found = false;
 	bool arc_added = false;
 
@@ -372,7 +372,7 @@ Point CCurve::NearestPoint(const CCurve& c, double *d)const
 	return best_point;
 }
 
-void CCurve::GetBox(CBox &box)
+void CCurve::GetBox(CBox2D &box)
 {
 	Point prev_p = Point(0, 0);
 	bool prev_p_valid = false;
@@ -964,7 +964,7 @@ static Point QuadrantEndPoint(int i)
 	}
 }
 
-void Span::GetBox(CBox &box)
+void Span::GetBox(CBox2D &box)
 {
 	box.Insert(m_p);
 	box.Insert(m_v.m_p);

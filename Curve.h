@@ -8,7 +8,7 @@
 #include <list>
 #include <math.h>
 #include "Point.h"
-#include "Box.h"
+#include "Box2D.h"
 
 class Line{
 public:
@@ -21,7 +21,7 @@ public:
 	double Dist(const Point& p)const;
 };
 
-class Arc;
+class CArc;
 
 class CVertex
 {
@@ -53,7 +53,7 @@ public:
 	Span(const Point& p, const CVertex& v, bool start_span = false):m_start_span(start_span), m_p(p), m_v(v){}
 	Point NearestPoint(const Point& p)const;
 	Point NearestPoint(const Span& p, double *d = NULL)const;
-	void GetBox(CBox &box);
+	void GetBox(CBox2D &box);
 	double IncludedAngle()const;
 	double GetArea()const;
 	bool On(const Point& p, double* t = NULL)const;
@@ -68,8 +68,8 @@ class CCurve
 	// a closed curve, please make sure you add an end point, the same as the start point
 
 protected:
-	bool CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& might_be_an_arc, Arc &arc);
-	void AddArcOrLines(bool check_for_arc, std::list<CVertex> &new_vertices, std::list<const CVertex*>& might_be_an_arc, Arc &arc, bool &arc_found, bool &arc_added);
+	void AddArcOrLines(bool check_for_arc, std::list<CVertex> &new_vertices, std::list<const CVertex*>& might_be_an_arc, CArc &arc, bool &arc_found, bool &arc_added);
+	bool CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& might_be_an_arc, CArc &arc);
 
 public:
 	std::list<CVertex> m_vertices;
@@ -80,7 +80,7 @@ public:
 	Point NearestPoint(const Point& p)const;
 	Point NearestPoint(const CCurve& p, double *d = NULL)const;
 	Point NearestPoint(const Span& p, double *d = NULL)const;
-	void GetBox(CBox &box);
+	void GetBox(CBox2D &box);
 	void Reverse();
 	double GetArea()const;
 	bool IsClockwise()const{return GetArea()>0;}
