@@ -228,10 +228,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\clipper\contrib\function_object_bases.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\kurve\kurve.cpp"
 				>
 			</File>
@@ -245,10 +241,6 @@
 			</File>
 			<File
 				RelativePath=".\PythonStuff.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\clipper\contrib\skeleton.cpp"
 				>
 			</File>
 		</Filter>
@@ -282,19 +274,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\clipper.h"
-				>
-			</File>
-			<File
 				RelativePath=".\Curve.h"
 				>
 			</File>
 			<File
 				RelativePath=".\dxf.h"
-				>
-			</File>
-			<File
-				RelativePath=".\clipper\contrib\function_object_bases.h"
 				>
 			</File>
 			<File
@@ -307,10 +291,6 @@
 			</File>
 			<File
 				RelativePath=".\PythonStuff.h"
-				>
-			</File>
-			<File
-				RelativePath=".\clipper\contrib\skeleton.h"
 				>
 			</File>
 		</Filter>
