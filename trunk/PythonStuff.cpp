@@ -7,6 +7,7 @@
 #include "Area.h"
 #include "Point.h"
 #include "AreaDxf.h"
+#include "kurve/geometry.h"
 
 #if _DEBUG
 #undef _DEBUG
@@ -49,6 +50,14 @@ boost::python::list getCurves(const CArea& area) {
 		clist.append(curve);
     }
 	return clist;
+}
+
+boost::python::tuple transformed_point(const geoff_geometry::Matrix &matrix, double x, double y, double z)
+{
+	geoff_geometry::Point3d p(x,y,z);
+	p = p.Transform(matrix);
+
+	return bp::make_tuple(p.x,p.y,p.z);
 }
 
 static void print_curve(const CCurve& c)
@@ -115,6 +124,11 @@ static CArea AreaFromDxf(const char* filepath)
 static void append_point(CCurve& c, const Point& p)
 {
 	c.m_vertices.push_back(CVertex(p));
+}
+
+static Point nearest_point_to_curve(CCurve& c1, const CCurve& c2)
+{
+	return c1.NearestPoint(c2);
 }
 
 boost::python::list MakePocketToolpath(const CArea& a, double tool_radius, double extra_offset, double stepover, bool from_center, bool use_zig_zag, double zig_angle)
@@ -197,6 +211,33 @@ bp::tuple TangentialArc(const Point &p0, const Point &p1, const Point &v0)
   return bp::make_tuple(c, dir);
 }
 
+boost::python::list spanIntersect(const Span& span1, const Span& span2) {
+	boost::python::list plist;
+	std::list<Point> pts;
+	span1.Intersect(span2, pts);
+	BOOST_FOREACH(const Point& p, pts) {
+		plist.append(p);
+    }
+	return plist;
+}
+
+//Matrix(boost::python::list &l){}
+
+boost::shared_ptr<geoff_geometry::Matrix> matrix_constructor(const boost::python::list& lst) {
+	double m[16] = {1,0,0,0,0,1,0,0, 0,0,1,0, 0,0,0,1};
+
+  boost::python::ssize_t n = boost::python::len(lst);
+  int j = 0;
+  for(boost::python::ssize_t i=0;i<n;i++) {
+    boost::python::object elem = lst[i];
+	m[j] = boost::python::extract<double>(elem.attr("__float__")());
+	j++;
+	if(j>=16)break;
+  }
+
+  return boost::shared_ptr<geoff_geometry::Matrix>( new geoff_geometry::Matrix(m) );
+}
+
 BOOST_PYTHON_MODULE(area) {
 	bp::class_<Point>("Point") 
         .def(bp::init<double, double>())
@@ -219,6 +260,7 @@ BOOST_PYTHON_MODULE(area) {
 		.def("Rotate", static_cast< void (Point::*)(double) >(&Point::Rotate))
         .def_readwrite("x", &Point::x)
         .def_readwrite("y", &Point::y)
+		.def("Transform", &Point::Transform)
     ;
 
 	bp::class_<CVertex>("Vertex") 
@@ -245,6 +287,7 @@ BOOST_PYTHON_MODULE(area) {
 		.def("MidParam", &Span::MidParam)
 		.def("Length", &Span::Length)
 		.def("GetVector", &Span::GetVector)
+		.def("Intersect", &spanIntersect)
         .def_readwrite("p", &Span::m_p)
 		.def_readwrite("v", &Span::m_v)
     ;
@@ -256,6 +299,7 @@ BOOST_PYTHON_MODULE(area) {
         .def("append",&append_point)
         .def("text", &print_curve)
 		.def("NearestPoint", static_cast< Point (CCurve::*)(const Point& p)const >(&CCurve::NearestPoint))
+		.def("NearestPoint", &nearest_point_to_curve)
 		.def("Reverse", &CCurve::Reverse)
 		.def("getNumVertices", &num_vertices)
 		.def("FirstVertex", &FirstVertex)
@@ -301,8 +345,15 @@ BOOST_PYTHON_MODULE(area) {
 		.def("GetBox", &CArea::GetBox)
 		.def("Reorder", &CArea::Reorder)
 		.def("MakePocketToolpath", &MakePocketToolpath)
-		.def("Split", &SplitArea);
+		.def("Split", &SplitArea)
     ;
+
+	bp::class_<geoff_geometry::Matrix, boost::shared_ptr<geoff_geometry::Matrix> > ("Matrix")
+        .def(bp::init<geoff_geometry::Matrix>())
+	    .def("__init__", bp::make_constructor(&matrix_constructor))
+	    .def("TransformedPoint", &transformed_point)
+		.def("Multiply", &geoff_geometry::Matrix::Multiply)
+	;
 
     bp::def("set_units", set_units);
     bp::def("get_units", get_units);

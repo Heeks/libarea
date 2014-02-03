@@ -635,16 +635,28 @@ static CCurve MakeCCurve(const geoff_geometry::Kurve& k)
 	return c;
 }
 
+static geoff_geometry::Span MakeSpan(const Span& span)
+{
+	return geoff_geometry::Span(span.m_v.m_type, geoff_geometry::Point(span.m_p.x, span.m_p.y), geoff_geometry::Point(span.m_v.m_p.x, span.m_v.m_p.y), geoff_geometry::Point(span.m_v.m_c.x, span.m_v.m_c.y));
+}
+
+static Span MakeCSpan(const geoff_geometry::Span &sp)
+{
+	return Span(Point(sp.p0.x, sp.p0.y), CVertex(sp.dir, Point(sp.p1.x, sp.p1.y), Point(sp.pc.x, sp.pc.y)));
+}
+
 bool CCurve::Offset(double leftwards_value)
 {
 	// use the kurve code donated by Geoff Hawkesford, to offset the curve as an open curve
 	// returns true for success, false for failure
-	geoff_geometry::Kurve k = MakeKurve(*this);
-	geoff_geometry::Kurve kOffset;
 	bool success = true;
+
+	CCurve save_curve = *this;
 
 	try
 	{
+		geoff_geometry::Kurve k = MakeKurve(*this);
+		geoff_geometry::Kurve kOffset;
 		int ret = 0;
 		k.OffsetMethod1(kOffset, fabs(leftwards_value), (leftwards_value > 0) ? 1:-1, 1, ret);
 		success = (ret == 0);
@@ -653,6 +665,23 @@ bool CCurve::Offset(double leftwards_value)
 	catch(...)
 	{
 		success = false;
+	}
+
+	if(success == false)
+	{
+		if(this->IsClosed())
+		{
+			double inwards_offset = leftwards_value;
+			if(this->IsClockwise())inwards_offset = -inwards_offset;
+			CArea a;
+			a.append(*this);
+			a.Offset(inwards_offset);
+			if(a.m_curves.size() == 1)
+			{
+				*this = a.m_curves.front();
+				success = true;
+			}
+		}
 	}
 
 	return success;
@@ -1108,6 +1137,16 @@ Point Span::GetVector(double fraction)const
 	{
 		return Point(v.y, -v.x);
 	}
+}
+
+void Span::Intersect(const Span& s, std::list<Point> &pts)const
+{
+	// finds all the intersection points between two spans and puts them in the given list
+	geoff_geometry::Point pInt1, pInt2;
+	double t[4];
+	int num_int = MakeSpan(*this).Intof(MakeSpan(s), pInt1, pInt2, t);
+	if(num_int > 0)pts.push_back(Point(pInt1.x, pInt1.y));
+	if(num_int > 1)pts.push_back(Point(pInt2.x, pInt2.y));
 }
 
 void tangential_arc(const Point &p0, const Point &p1, const Point &v0, Point &c, int &dir)

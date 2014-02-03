@@ -16,7 +16,7 @@ double CArea::m_MakeOffsets_increment = 0.0;
 double CArea::m_split_processing_length = 0.0;
 bool CArea::m_set_processing_length_in_split = false;
 double CArea::m_after_MakeOffsets_length = 0.0;
-static const double PI = 3.1415926535897932;
+//static const double PI = 3.1415926535897932;
 
 void CArea::append(const CCurve& curve)
 {
