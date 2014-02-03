@@ -126,9 +126,12 @@ static void append_point(CCurve& c, const Point& p)
 	c.m_vertices.push_back(CVertex(p));
 }
 
-static Point nearest_point_to_curve(CCurve& c1, const CCurve& c2)
+static boost::python::tuple nearest_point_to_curve(CCurve& c1, const CCurve& c2)
 {
-	return c1.NearestPoint(c2);
+	double dist;
+	Point p = c1.NearestPoint(c2, &dist);
+
+	return bp::make_tuple(p, dist);
 }
 
 boost::python::list MakePocketToolpath(const CArea& a, double tool_radius, double extra_offset, double stepover, bool from_center, bool use_zig_zag, double zig_angle)
