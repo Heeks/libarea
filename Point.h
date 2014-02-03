@@ -6,6 +6,7 @@
 #pragma once
 
 #include <cmath>
+#include "kurve/geometry.h"
 
 class Point{
 public:
@@ -38,6 +39,13 @@ public:
 		x = temp;
 	}	
 	void Rotate(double angle){if(fabs(angle) < 1.0e-09)return; Rotate(cos(angle), sin(angle));}
+	void Transform(const geoff_geometry::Matrix &m)
+	{
+		geoff_geometry::Point p(x,y);
+		p = p.Transform(m);
+		x = p.x;
+		y = p.y;
+	}
 };
 
 const Point operator*(const double &d, const Point &p);

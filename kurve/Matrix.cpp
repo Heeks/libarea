@@ -28,6 +28,7 @@ namespace geoff_geometry {
 		this->IsUnit();
 		this->IsMirrored();
 	}
+
 	Matrix::Matrix( const Matrix& m)
 	{
 		*this = m;

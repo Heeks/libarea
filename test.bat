@@ -1,2 +1,2 @@
-c:\python25\python.exe test.py
+c:\python26\python.exe test.py
 pause

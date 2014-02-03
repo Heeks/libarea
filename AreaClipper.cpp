@@ -11,7 +11,7 @@ using namespace clipper;
 
 bool CArea::HolesLinked(){ return false; }
 
-static const double PI = 3.1415926535897932;
+//static const double PI = 3.1415926535897932;
 static double Clipper4Factor = 10000.0;
 
 class DoublePoint

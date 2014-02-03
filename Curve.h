@@ -61,6 +61,7 @@ public:
 	Point MidParam(double param)const;
 	double Length()const;
 	Point GetVector(double fraction)const;
+	void Intersect(const Span& s, std::list<Point> &pts)const; // finds all the intersection points between two spans
 };
 
 class CCurve
