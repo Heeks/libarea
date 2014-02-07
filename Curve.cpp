@@ -527,6 +527,61 @@ void CCurve::Break(const Point &p) {
 	}
 }
 
+void CCurve::ExtractSeparateCurves(const std::list<Point> &ordered_points, std::list<CCurve> &separate_curves)const
+{
+	// returns separate curves for this curve split at points
+	// the points must be in order along this curve, already, and lie on this curve
+	const Point *prev_p = NULL;
+
+	if(ordered_points.size() == 0)
+	{
+		separate_curves.push_back(*this);
+		return;
+	}
+
+	CCurve current_curve;
+
+	std::list<Point>::const_iterator PIt = ordered_points.begin();
+	Point point = *PIt;
+
+	for(std::list<CVertex>::const_iterator VIt = m_vertices.begin(); VIt != m_vertices.end(); VIt++)
+	{
+		const CVertex& vertex = *VIt;
+		if(prev_p)// not the first vertex
+		{
+			Span span(*prev_p, vertex);
+			while((PIt != ordered_points.end()) && span.On(point))
+			{
+				CVertex v(vertex);
+				v.m_p = point;
+				current_curve.m_vertices.push_back(v);
+				if(current_curve.m_vertices.size() > 1)// don't add single point curves
+					separate_curves.push_back(current_curve); // add the curve
+				current_curve = CCurve();// make a new curve
+				current_curve.m_vertices.push_back(v); // add it's first point
+				PIt++;
+				if(PIt != ordered_points.end())point = *PIt; // increment the point
+			}
+
+			// add the end of span
+			if(current_curve.m_vertices.back().m_p != vertex.m_p)
+				current_curve.m_vertices.push_back(vertex);
+		}
+		if((current_curve.m_vertices.size() == 0) || (current_curve.m_vertices.back().m_p != vertex.m_p))
+		{
+			// very first vertex, start the current curve
+			current_curve.m_vertices.push_back(vertex);
+		}
+		prev_p = &(vertex.m_p);
+	}
+
+	// add whatever is left
+	if(current_curve.m_vertices.size() > 1)// don't add single point curves
+		separate_curves.push_back(current_curve); // add the curve
+}
+
+
+
 void CCurve::RemoveTinySpans() {
 	CCurve new_curve;
 
@@ -853,6 +908,30 @@ void CCurve::operator+=(const CCurve& curve)
 		else
 		{
 			m_vertices.push_back(vt);
+		}
+	}
+}
+
+void CCurve::SpanIntersections(const Span& s, std::list<Point> &pts)const
+{
+	std::list<Span> spans;
+	GetSpans(spans);
+	for(std::list<Span>::iterator It = spans.begin(); It != spans.end(); It++)
+	{
+		Span& span = *It;
+		std::list<Point> pts2;
+		span.Intersect(s, pts2);
+		for(std::list<Point>::iterator It = pts2.begin(); It != pts2.end(); It++)
+		{
+			Point &pt = *It;
+			if(pts.size() == 0)
+			{
+				pts.push_back(pt);
+			}
+			else
+			{
+				if(pt != pts.back())pts.push_back(pt);
+			}
 		}
 	}
 }

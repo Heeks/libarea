@@ -91,12 +91,14 @@ public:
 	bool Offset(double leftwards_value);
 	void OffsetForward(double forwards_value, bool refit_arcs = true); // for drag-knife compensation
 	void Break(const Point &p);
+	void ExtractSeparateCurves(const std::list<Point> &ordered_points, std::list<CCurve> &separate_curves)const;
 	double Perim()const;
 	Point PerimToPoint(double perim)const;
 	double PointToPerim(const Point& p)const;
 	void GetSpans(std::list<Span> &spans)const;
 	void RemoveTinySpans();
 	void operator+=(const CCurve& p);
+	void SpanIntersections(const Span& s, std::list<Point> &pts)const;
 };
 
 void tangential_arc(const Point &p0, const Point &p1, const Point &v0, Point &c, int &dir);

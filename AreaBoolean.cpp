@@ -211,3 +211,8 @@ void CArea::Offset(double inwards_value)
 	booleng->Do_Operation(BOOL_CORRECTION);
 	SetFromResult( *this, booleng );
 }
+
+void CArea::Thicken(double value)
+{
+	// only in clipper version, so far
+}
