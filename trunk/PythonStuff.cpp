@@ -241,6 +241,17 @@ boost::shared_ptr<geoff_geometry::Matrix> matrix_constructor(const boost::python
   return boost::shared_ptr<geoff_geometry::Matrix>( new geoff_geometry::Matrix(m) );
 }
 
+boost::python::list InsideCurves(const CArea& a, const CCurve& curve) {
+	boost::python::list plist;
+
+	std::list<CCurve> curves_inside;
+	a.InsideCurves(curve, curves_inside);
+	BOOST_FOREACH(const CCurve& c, curves_inside) {
+		plist.append(c);
+    }
+	return plist;
+}
+
 BOOST_PYTHON_MODULE(area) {
 	bp::class_<Point>("Point") 
         .def(bp::init<double, double>())
@@ -349,6 +360,7 @@ BOOST_PYTHON_MODULE(area) {
 		.def("Reorder", &CArea::Reorder)
 		.def("MakePocketToolpath", &MakePocketToolpath)
 		.def("Split", &SplitArea)
+		.def("InsideCurves", &InsideCurves)
     ;
 
 	bp::class_<geoff_geometry::Matrix, boost::shared_ptr<geoff_geometry::Matrix> > ("Matrix")

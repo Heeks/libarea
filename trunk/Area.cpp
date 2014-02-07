@@ -6,6 +6,8 @@
 #include "Area.h"
 #include "AreaOrderer.h"
 
+#include <map>
+
 double CArea::m_accuracy = 0.01;
 double CArea::m_units = 1.0;
 bool CArea::m_fit_arcs = true;
@@ -631,4 +633,121 @@ bool IsInside(const Point& p, const CArea& a)
 	a2.Intersect(a);
 	if(fabs(a2.GetArea()) < 0.0004)return false;
 	return true;
+}
+
+void CArea::SpanIntersections(const Span& span, std::list<Point> &pts)const
+{
+	// this returns all the intersections of this area with the given span, ordered along the span
+
+	// get all points where this area's curves intersect the span
+	std::list<Point> pts2;
+	for(std::list<CCurve>::const_iterator It = m_curves.begin(); It != m_curves.end(); It++)
+	{
+		const CCurve &c = *It;
+		c.SpanIntersections(span, pts2);
+	}
+
+	// order them along the span
+	std::multimap<double, Point> ordered_points;
+	for(std::list<Point>::iterator It = pts2.begin(); It != pts2.end(); It++)
+	{
+		Point &p = *It;
+		double t;
+		if(span.On(p, &t))
+		{
+			ordered_points.insert(std::make_pair(t, p));
+		}
+	}
+
+	// add them to the given list of points
+	for(std::multimap<double, Point>::iterator It = ordered_points.begin(); It != ordered_points.end(); It++)
+	{
+		Point p = It->second;
+		pts.push_back(p);
+	}
+}
+
+void CArea::CurveIntersections(const CCurve& curve, std::list<Point> &pts)const
+{
+	// this returns all the intersections of this area with the given curve, ordered along the curve
+	std::list<Span> spans;
+	curve.GetSpans(spans);
+	for(std::list<Span>::iterator It = spans.begin(); It != spans.end(); It++)
+	{
+		Span& span = *It;
+		std::list<Point> pts2;
+		SpanIntersections(span, pts2);
+		for(std::list<Point>::iterator It = pts2.begin(); It != pts2.end(); It++)
+		{
+			Point &pt = *It;
+			if(pts.size() == 0)
+			{
+				pts.push_back(pt);
+			}
+			else
+			{
+				if(pt != pts.back())pts.push_back(pt);
+			}
+		}
+	}
+}
+
+class ThickLine
+{
+public:
+	CArea m_area;
+	CCurve m_curve;
+
+	ThickLine(const CCurve& curve)
+	{
+		m_curve = curve;
+		m_area.append(curve);
+		m_area.Thicken(0.001);
+	}
+};
+
+void CArea::InsideCurves(const CCurve& curve, std::list<CCurve> &curves_inside)const
+{
+	// find the intersection points between the curve and this area
+	std::list<Point> pts;
+	CurveIntersections(curve, pts);
+
+	// separate curve in multiple curves between these intersections.
+	std::list<CCurve> separate_curves;
+	curve.ExtractSeparateCurves(pts, separate_curves);
+
+	// make an area of every open curve by making "thick lines" like 0.001 offset in both sides.Save it together with the curve in a list.
+	std::list<ThickLine> thick_lines;
+	for(std::list<CCurve>::iterator It = separate_curves.begin(); It != separate_curves.end(); It++)
+	{
+		CCurve &curve = *It;
+		thick_lines.push_back(ThickLine(curve));
+	}
+
+	// offset curve1 outwards by the same value you used to make the thick lines+ a little bit more, to make sure curves that lie on the edge are also inside. Just a very small tolerance.
+	CArea offset_area(*this);
+	offset_area.Offset(-0.002);
+
+	// subtract c1 (area1) from every thick line
+	for(std::list<ThickLine>::iterator It = thick_lines.begin(); It != thick_lines.end(); It++)
+	{
+		ThickLine & thick_line = *It;
+		bool save_fit_arcs = CArea::m_fit_arcs;
+		double area_before = fabs(thick_line.m_area.GetArea());
+		thick_line.m_area.Subtract(offset_area); // Thick_line.subtract(area1) 
+		if(thick_line.m_area.m_curves.size() == 0)// If Thick_line.getnumCurves == 0 :
+		{	
+			// Curve_part is inside
+			curves_inside.push_back(thick_line.m_curve);
+		}
+		else
+		{
+			// I was getting some problems, after Subtract, there was still some curve left, so  checking the area value seems to work, but this is a bit messy
+			double area_after = fabs(thick_line.m_area.GetArea());
+			if(area_after < area_before * 0.5)
+			{
+				curves_inside.push_back(thick_line.m_curve);
+			}
+		}
+	}
 }
