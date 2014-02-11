@@ -361,7 +361,7 @@ BOOST_PYTHON_MODULE(area) {
 		.def("MakePocketToolpath", &MakePocketToolpath)
 		.def("Split", &SplitArea)
 		.def("InsideCurves", &InsideCurves)
-		.def("Thicken"), &CArea::Thicken)
+		.def("Thicken", &CArea::Thicken)
     ;
 
 	bp::class_<geoff_geometry::Matrix, boost::shared_ptr<geoff_geometry::Matrix> > ("Matrix")
