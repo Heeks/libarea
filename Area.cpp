@@ -708,46 +708,20 @@ public:
 
 void CArea::InsideCurves(const CCurve& curve, std::list<CCurve> &curves_inside)const
 {
-	// find the intersection points between the curve and this area
+	//1. find the intersectionpoints between these two curves.
 	std::list<Point> pts;
 	CurveIntersections(curve, pts);
 
-	// separate curve in multiple curves between these intersections.
+	//2.seperate curve2 in multiple curves between these intersections.
 	std::list<CCurve> separate_curves;
 	curve.ExtractSeparateCurves(pts, separate_curves);
 
-	// make an area of every open curve by making "thick lines" like 0.001 offset in both sides.Save it together with the curve in a list.
-	std::list<ThickLine> thick_lines;
+	//3. if the midpoint of a seperate curve lies in a1, then we return it.
 	for(std::list<CCurve>::iterator It = separate_curves.begin(); It != separate_curves.end(); It++)
 	{
 		CCurve &curve = *It;
-		thick_lines.push_back(ThickLine(curve));
-	}
-
-	// offset curve1 outwards by the same value you used to make the thick lines+ a little bit more, to make sure curves that lie on the edge are also inside. Just a very small tolerance.
-	CArea offset_area(*this);
-	offset_area.Offset(-0.002);
-
-	// subtract c1 (area1) from every thick line
-	for(std::list<ThickLine>::iterator It = thick_lines.begin(); It != thick_lines.end(); It++)
-	{
-		ThickLine & thick_line = *It;
-		bool save_fit_arcs = CArea::m_fit_arcs;
-		double area_before = fabs(thick_line.m_area.GetArea());
-		thick_line.m_area.Subtract(offset_area); // Thick_line.subtract(area1) 
-		if(thick_line.m_area.m_curves.size() == 0)// If Thick_line.getnumCurves == 0 :
-		{	
-			// Curve_part is inside
-			curves_inside.push_back(thick_line.m_curve);
-		}
-		else
-		{
-			// I was getting some problems, after Subtract, there was still some curve left, so  checking the area value seems to work, but this is a bit messy
-			double area_after = fabs(thick_line.m_area.GetArea());
-			if(area_after < area_before * 0.5)
-			{
-				curves_inside.push_back(thick_line.m_curve);
-			}
-		}
+		double length = curve.Perim();
+		Point mid_point = curve.PerimToPoint(length * 0.5);
+		if(IsInside(mid_point, *this))curves_inside.push_back(curve);
 	}
 }
