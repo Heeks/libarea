@@ -44,10 +44,8 @@ if(Boost_FOUND)
     MESSAGE(STATUS "Boost_LIBRARIES is: " ${Boost_LIBRARIES})    
 endif()
 
-# this defines the source-files
+# this defines the source-files for library
 set(AREA_SRC
-	${area_SOURCE_DIR}/PythonStuff.cpp
-
     ${area_SOURCE_DIR}/Arc.cpp
     ${area_SOURCE_DIR}/Area.cpp
     ${area_SOURCE_DIR}/AreaBoolean.cpp
@@ -76,36 +74,67 @@ set(AREA_SRC
     ${area_SOURCE_DIR}/kurve/offset.cpp
 )
 
+# this defines the additional source-files for python module (wrapper to libarea)
+set(PYAREA_SRC
+    ${area_SOURCE_DIR}/PythonStuff.cpp
+)
+
+# this defines the headers
+if(DEFINED INCLUDE_INSTALL_DIR)
+    set(includedir ${INCLUDE_INSTALL_DIR})
+else(DEFINED INCLUDE_INSTALL_DIR)
+    set(INCLUDE_INSTALL_DIR include)
+    set(includedir ${CMAKE_INSTALL_PREFIX}/${INCLUDE_INSTALL_DIR})
+endif(DEFINED INCLUDE_INSTALL_DIR)
+
+file(GLOB headers "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
+install(FILES ${headers} DESTINATION ${INCLUDE_INSTALL_DIR}/area COMPONENT headers)
+
 # include directories
 include_directories( 
-	${area_SOURCE_DIR} 
-	${area_SOURCE_DIR}/kurve/
-	${area_SOURCE_DIR}/kbool/src/
+    ${area_SOURCE_DIR} 
+    ${area_SOURCE_DIR}/kurve/
+    ${area_SOURCE_DIR}/kbool/src/
 )
+
+# this makes the shared library
+add_library(
+    libarea
+    SHARED
+    ${AREA_SRC}
+)
+set_target_properties(libarea PROPERTIES PREFIX "")
+set_target_properties(libarea PROPERTIES SOVERSION 0)
+
+if(DEFINED CMAKE_INSTALL_LIBDIR)
+    set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR})
+else(DEFINED CMAKE_INSTALL_LIBDIR)
+    set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_PREFIX}/lib)
+endif(DEFINED CMAKE_INSTALL_LIBDIR)
+
+install(TARGETS libarea LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries)
+message(STATUS "Library will be installed to: " ${CMAKE_INSTALL_LIBDIR})
+
 
 # this makes the Python module
 add_library(
     area
     MODULE
-    ${AREA_SRC}
+    ${PYAREA_SRC}
 )
-target_link_libraries(area ${Boost_LIBRARIES} ) 
+target_link_libraries(area libarea ${Boost_LIBRARIES})
 set_target_properties(area PROPERTIES PREFIX "") 
 
-
-#
 # this figures out where to install the Python modules
-#
 execute_process(
     COMMAND python -c "from distutils.sysconfig import get_python_lib; print get_python_lib()"
     OUTPUT_VARIABLE Python_site_packages
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-MESSAGE(STATUS "Python libraries will be installed to: " ${Python_site_packages})
+message(STATUS "Python module will be installed to: " ${Python_site_packages})
 
 # this installs the python library
 install(
-	TARGETS area
-	LIBRARY DESTINATION ${Python_site_packages}
+    TARGETS area
+    LIBRARY DESTINATION ${Python_site_packages}
 )
-
