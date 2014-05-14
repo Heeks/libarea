@@ -1,3 +1,22 @@
+libarea (0.0.20140514-1) unstable; urgency=low
+
+  New upstream version:
+    * (removed) debian patches are now applied upstream
+
+ -- Romuald Conty <neomilium@gmail.com>  Wed, 14 Apr 2014 14:42:42 +0200
+
+libarea (0.0.20130701-2) unstable; urgency=low
+
+  * Split into 3 packages: libarea0, libarea-dev and python-area
+
+ -- Romuald Conty <neomilium@gmail.com>  Tue, 10 Apr 2014 22:42:42 +0200
+
+libarea (0.0.20130701-1) unstable; urgency=low
+
+  * Use CMake instead of Makefile
+
+ -- Romuald Conty <neomilium@gmail.com>  Tue, 08 Apr 2014 15:42:42 +0200
+
 libarea (0.0.2) karmic; urgency=low
 
   * Fix some minor debian package issues.

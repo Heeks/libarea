@@ -1,18 +1,45 @@
 Source: libarea
 Priority: extra
-Maintainer: Joachim Steiger <ubuntu@hyte.de>
-Build-Depends: debhelper (>= 6), python-dev, python-support, libboost-python-dev
-Standards-Version: 3.8.4.0
-Section: python
-Homepage: http://code.google.com/p/libarea/
+Section: misc
+Maintainer: Romuald Conty <neomilium@gmail.com>
+Build-Depends: debhelper (>= 8), libboost-python-dev, cmake
+Standards-Version: 3.9.3
+Homepage: https://code.google.com/p/libarea/
+Vcs-Svn: http://libarea.googlecode.com/svn/trunk/
+Vcs-Browser: https://code.google.com/p/libarea/source/browse/
 
-Package: python-area
+Package: libarea0
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}
-Description: Area C++ class with a Python module
+Section: libs
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Area C++ library
+ Area is a CAM-related software for pocketing operation.
+ .
  Derived from the kbool library written by Klaas Holwerda
  http://boolean.klaasholwerda.nl/bool.html.
  .
  This package contains the shared library.
+
+Package: libarea-dev
+Architecture: all
+Section: libdevel
+Depends: ${misc:Depends}, libarea0 (= ${binary:Version})
+Description: Area C++ library (development files)
+ Derived from the kbool library written by Klaas Holwerda
+ http://boolean.klaasholwerda.nl/bool.html.
  .
+ This package contains the development files (ie. headers).
+
+Package: python-area
+Architecture: any
+Section: python
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, libarea0, python-dev (>=2.6.6-3~)
+Provides: ${python:Provides}
+Description: Python module for libarea
+ Area is a CAM-related software for pocketing operation.
+ .
+ Derived from the kbool library written by Klaas Holwerda
+ http://boolean.klaasholwerda.nl/bool.html.
+ .
+ This package contains the python module.
 
