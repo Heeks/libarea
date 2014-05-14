@@ -727,13 +727,36 @@ bool CCurve::Offset(double leftwards_value)
 		if(this->IsClosed())
 		{
 			double inwards_offset = leftwards_value;
-			if(this->IsClockwise())inwards_offset = -inwards_offset;
+			bool cw = false;
+			if(this->IsClockwise())
+			{
+				inwards_offset = -inwards_offset;
+				cw = true;
+			}
 			CArea a;
 			a.append(*this);
 			a.Offset(inwards_offset);
 			if(a.m_curves.size() == 1)
 			{
+				Span* start_span = NULL;
+				if(this->m_vertices.size() > 1)
+				{
+					std::list<CVertex>::iterator It = m_vertices.begin();
+					CVertex &v0 = *It;
+					It++;
+					CVertex &v1 = *It;
+					start_span = new Span(v0.m_p, v1, true);
+				}
 				*this = a.m_curves.front();
+				if(this->IsClockwise() != cw)this->Reverse();
+				if(start_span)
+				{
+					Point forward = start_span->GetVector(0.0);
+					Point left(-forward.y, forward.x);
+					Point offset_start = start_span->m_p + left * leftwards_value;
+					this->ChangeStart(this->NearestPoint(offset_start));
+					delete start_span;
+				}
 				success = true;
 			}
 		}
