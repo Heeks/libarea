@@ -87,6 +87,8 @@ else(DEFINED INCLUDE_INSTALL_DIR)
     set(includedir ${CMAKE_INSTALL_PREFIX}/${INCLUDE_INSTALL_DIR})
 endif(DEFINED INCLUDE_INSTALL_DIR)
 
+file(GLOB headers "${CMAKE_CURRENT_SOURCE_DIR}/kurve/*.h")
+install(FILES ${headers} DESTINATION ${INCLUDE_INSTALL_DIR}/area/kurve COMPONENT headers)
 file(GLOB headers "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
 install(FILES ${headers} DESTINATION ${INCLUDE_INSTALL_DIR}/area COMPONENT headers)
 
