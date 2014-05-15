@@ -32,7 +32,7 @@ execute_process(
     OUTPUT_VARIABLE Python_Includes
 )
 include_directories(${Python_Includes})
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 find_package( Boost COMPONENTS python REQUIRED)  # find BOOST and boost-python
 if(Boost_FOUND)
@@ -46,37 +46,37 @@ endif()
 
 # this defines the source-files for library
 set(AREA_SRC
-    ${area_SOURCE_DIR}/Arc.cpp
-    ${area_SOURCE_DIR}/Area.cpp
-    ${area_SOURCE_DIR}/AreaBoolean.cpp
-    ${area_SOURCE_DIR}/AreaDxf.cpp
-    ${area_SOURCE_DIR}/AreaOrderer.cpp
-    ${area_SOURCE_DIR}/AreaPocket.cpp
-    ${area_SOURCE_DIR}/Circle.cpp
-    ${area_SOURCE_DIR}/Curve.cpp
-    ${area_SOURCE_DIR}/dxf.cpp
+    Arc.cpp
+    Area.cpp
+    AreaBoolean.cpp
+    AreaDxf.cpp
+    AreaOrderer.cpp
+    AreaPocket.cpp
+    Circle.cpp
+    Curve.cpp
+    dxf.cpp
     
-    ${area_SOURCE_DIR}/kbool/src/booleng.cpp
-    ${area_SOURCE_DIR}/kbool/src/record.cpp
-    ${area_SOURCE_DIR}/kbool/src/scanbeam.cpp
-    ${area_SOURCE_DIR}/kbool/src/graph.cpp
-    ${area_SOURCE_DIR}/kbool/src/graphlst.cpp
-    ${area_SOURCE_DIR}/kbool/src/instonly.cpp
-    ${area_SOURCE_DIR}/kbool/src/line.cpp
-    ${area_SOURCE_DIR}/kbool/src/link.cpp
-    ${area_SOURCE_DIR}/kbool/src/lpoint.cpp    
-    ${area_SOURCE_DIR}/kbool/src/node.cpp
+    kbool/src/booleng.cpp
+    kbool/src/record.cpp
+    kbool/src/scanbeam.cpp
+    kbool/src/graph.cpp
+    kbool/src/graphlst.cpp
+    kbool/src/instonly.cpp
+    kbool/src/line.cpp
+    kbool/src/link.cpp
+    kbool/src/lpoint.cpp    
+    kbool/src/node.cpp
      
-    ${area_SOURCE_DIR}/kurve/Construction.cpp
-    ${area_SOURCE_DIR}/kurve/Finite.cpp
-    ${area_SOURCE_DIR}/kurve/kurve.cpp
-    ${area_SOURCE_DIR}/kurve/Matrix.cpp
-    ${area_SOURCE_DIR}/kurve/offset.cpp
+    kurve/Construction.cpp
+    kurve/Finite.cpp
+    kurve/kurve.cpp
+    kurve/Matrix.cpp
+    kurve/offset.cpp
 )
 
 # this defines the additional source-files for python module (wrapper to libarea)
 set(PYAREA_SRC
-    ${area_SOURCE_DIR}/PythonStuff.cpp
+    PythonStuff.cpp
 )
 
 # this defines the headers
@@ -92,9 +92,8 @@ install(FILES ${headers} DESTINATION ${INCLUDE_INSTALL_DIR}/area COMPONENT heade
 
 # include directories
 include_directories( 
-    ${area_SOURCE_DIR} 
-    ${area_SOURCE_DIR}/kurve/
-    ${area_SOURCE_DIR}/kbool/src/
+    kurve/
+    kbool/src/
 )
 
 # this makes the shared library
