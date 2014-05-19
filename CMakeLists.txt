@@ -48,7 +48,6 @@ endif()
 set(AREA_SRC
     Arc.cpp
     Area.cpp
-    AreaBoolean.cpp
     AreaDxf.cpp
     AreaOrderer.cpp
     AreaPocket.cpp
@@ -103,6 +102,7 @@ add_library(
     libarea
     SHARED
     ${AREA_SRC}
+    AreaClipper.cpp clipper.cpp
 )
 set_target_properties(libarea PROPERTIES PREFIX "")
 set_target_properties(libarea PROPERTIES SOVERSION 0)
@@ -121,9 +121,11 @@ message(STATUS "Library will be installed to: " ${CMAKE_INSTALL_LIBDIR})
 add_library(
     area
     MODULE
+    ${AREA_SRC}
     ${PYAREA_SRC}
+    AreaBoolean.cpp
 )
-target_link_libraries(area libarea ${Boost_LIBRARIES})
+target_link_libraries(area ${Boost_LIBRARIES})
 set_target_properties(area PROPERTIES PREFIX "") 
 
 # this figures out where to install the Python modules
