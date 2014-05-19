@@ -18,6 +18,8 @@ Description: Area C++ library
  Derived from the kbool library written by Klaas Holwerda
  http://boolean.klaasholwerda.nl/bool.html.
  .
+ This library uses "Clipper" implementation.
+ .
  This package contains the shared library.
 
 Package: libarea-dev
@@ -33,13 +35,15 @@ Description: Area C++ library (development files)
 Package: python-area
 Architecture: any
 Section: python
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, libarea0, python-dev (>=2.6.6-3~)
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python-dev (>=2.6.6-3~)
 Provides: ${python:Provides}
 Description: Python module for libarea
  Area is a CAM-related software for pocketing operation.
  .
  Derived from the kbool library written by Klaas Holwerda
  http://boolean.klaasholwerda.nl/bool.html.
+ .
+ This module uses "Boolean" implementation.
  .
  This package contains the python module.
 
