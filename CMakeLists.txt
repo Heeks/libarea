@@ -31,6 +31,8 @@ execute_process(
     COMMAND tr -d '\n'
     OUTPUT_VARIABLE Python_Includes
 )
+message(STATUS "Python include dir:" ${Python_Includes})
+
 include_directories(${Python_Includes})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 

@@ -2,7 +2,7 @@ Source: libarea
 Priority: extra
 Section: misc
 Maintainer: Romuald Conty <neomilium@gmail.com>
-Build-Depends: debhelper (>= 7), libboost-python-dev, cmake
+Build-Depends: debhelper (>= 7), libboost-python-dev, cmake, python-dev (>=2.6.5)
 Standards-Version: 3.9.3
 Homepage: https://code.google.com/p/libarea/
 Vcs-Svn: http://libarea.googlecode.com/svn/trunk/
@@ -35,7 +35,7 @@ Description: Area C++ library (development files)
 Package: python-area
 Architecture: any
 Section: python
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python-dev (>=2.6.5)
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}
 Provides: ${python:Provides}
 Description: Python module for libarea
  Area is a CAM-related software for pocketing operation.
