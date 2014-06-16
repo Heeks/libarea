@@ -3,7 +3,7 @@ libarea (0.0.20140514-1) unstable; urgency=low
   New upstream version:
     * (removed) debian patches are now applied upstream
 
- -- Romuald Conty <neomilium@gmail.com>  Wed, 14 Apr 2014 14:42:42 +0200
+ -- Romuald Conty <neomilium@gmail.com>  Mon, 14 Apr 2014 14:42:42 +0200
 
 libarea (0.0.20130701-2) unstable; urgency=low
 
