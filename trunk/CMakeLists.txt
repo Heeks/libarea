@@ -12,6 +12,10 @@ endif (CMAKE_BUILD_TOOL MATCHES "make")
 
 option(BUILD_TYPE
   "Build type: Release=ON/Debug=OFF  " ON)
+option(USE_CLIPPER_FOR_CPP
+  "Use clipper library (ON) or kbool (OFF) for C++ portion of libarea  " ON)
+option(USE_CLIPPER_FOR_PYTHON
+  "Use clipper library (ON) or kbool (OFF) for Python portion of libarea  " OFF)
 
 if (BUILD_TYPE)
     MESSAGE(STATUS " CMAKE_BUILD_TYPE = Release")
@@ -47,7 +51,7 @@ if(Boost_FOUND)
 endif()
 
 # this defines the source-files for library
-set(AREA_SRC
+set(AREA_SRC_COMMON
     Arc.cpp
     Area.cpp
     AreaDxf.cpp
@@ -56,7 +60,17 @@ set(AREA_SRC
     Circle.cpp
     Curve.cpp
     dxf.cpp
-    
+
+    kurve/Construction.cpp
+    kurve/Finite.cpp
+    kurve/kurve.cpp
+    kurve/Matrix.cpp
+    kurve/offset.cpp
+)
+
+set(AREA_SRC_KBOOL
+    AreaBoolean.cpp
+
     kbool/src/booleng.cpp
     kbool/src/record.cpp
     kbool/src/scanbeam.cpp
@@ -67,12 +81,12 @@ set(AREA_SRC
     kbool/src/link.cpp
     kbool/src/lpoint.cpp    
     kbool/src/node.cpp
-     
-    kurve/Construction.cpp
-    kurve/Finite.cpp
-    kurve/kurve.cpp
-    kurve/Matrix.cpp
-    kurve/offset.cpp
+)
+
+set(AREA_SRC_CLIPPER
+    AreaClipper.cpp
+
+    clipper.cpp
 )
 
 # this defines the additional source-files for python module (wrapper to libarea)
@@ -100,12 +114,21 @@ include_directories(
 )
 
 # this makes the shared library
-add_library(
-    libarea
-    SHARED
-    ${AREA_SRC}
-    AreaClipper.cpp clipper.cpp
-)
+if (USE_CLIPPER_FOR_CPP)
+  add_library(
+      libarea
+      SHARED
+      ${AREA_SRC_COMMON}
+      ${AREA_SRC_CLIPPER}
+  )
+else (USE_CLIPPER_FOR_CPP)
+  add_library(
+      libarea
+      SHARED
+      ${AREA_SRC_COMMON}
+      ${AREA_SRC_KBOOL}
+  )
+endif (USE_CLIPPER_FOR_CPP)
 set_target_properties(libarea PROPERTIES PREFIX "")
 set_target_properties(libarea PROPERTIES SOVERSION 0)
 
@@ -124,13 +147,23 @@ message(STATUS "Library will be installed to: " ${CMAKE_INSTALL_PREFIX}/lib)
 
 
 # this makes the Python module
-add_library(
-    area
-    MODULE
-    ${AREA_SRC}
-    ${PYAREA_SRC}
-    AreaBoolean.cpp
-)
+if (USE_CLIPPER_FOR_PYTHON)
+  add_library(
+      area
+      MODULE
+      ${AREA_SRC_COMMON}
+      ${AREA_SRC_CLIPPER}
+      ${PYAREA_SRC}
+  )
+else (USE_CLIPPER_FOR_PYTHON)
+  add_library(
+      area
+      MODULE
+      ${AREA_SRC_COMMON}
+      ${AREA_SRC_KBOOL}
+      ${PYAREA_SRC}
+  )
+endif (USE_CLIPPER_FOR_PYTHON)
 target_link_libraries(area ${Boost_LIBRARIES})
 set_target_properties(area PROPERTIES PREFIX "") 
 
