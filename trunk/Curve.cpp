@@ -442,8 +442,9 @@ void CCurve::ChangeStart(const Point &p) {
 	bool started = false;
 	bool finished = false;
 	int start_span;
+	bool closed = IsClosed();
 
-	for(int i = 0; i < 2; i++)
+	for(int i = 0; i < (closed ? 2:1); i++)
 	{
 		const Point *prev_p = NULL;
 
@@ -496,7 +497,7 @@ void CCurve::ChangeStart(const Point &p) {
 		}
 	}
 
-	if(finished)
+	if(started)
 	{
 		*this = new_curve;
 	}
@@ -933,6 +934,13 @@ void CCurve::operator+=(const CCurve& curve)
 			m_vertices.push_back(vt);
 		}
 	}
+}
+
+void CCurve::CurveIntersections(const CCurve& c, std::list<Point> &pts)const
+{
+	CArea a;
+	a.append(*this);
+	a.CurveIntersections(c, pts);
 }
 
 void CCurve::SpanIntersections(const Span& s, std::list<Point> &pts)const

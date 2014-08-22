@@ -252,6 +252,33 @@ boost::python::list InsideCurves(const CArea& a, const CCurve& curve) {
 	return plist;
 }
 
+boost::python::list CurveIntersections(const CCurve& c1, const CCurve& c2) {
+	boost::python::list plist;
+
+	std::list<Point> pts;
+	c1.CurveIntersections(c2, pts);
+	BOOST_FOREACH(const Point& p, pts) {
+		plist.append(p);
+    }
+	return plist;
+}
+
+boost::python::list AreaIntersections(const CArea& a, const CCurve& c2) {
+	boost::python::list plist;
+
+	std::list<Point> pts;
+	a.CurveIntersections(c2, pts);
+	BOOST_FOREACH(const Point& p, pts) {
+		plist.append(p);
+    }
+	return plist;
+}
+
+double AreaGetArea(const CArea& a)
+{
+	return a.GetArea();
+}
+
 BOOST_PYTHON_MODULE(area) {
 	bp::class_<Point>("Point") 
         .def(bp::init<double, double>())
@@ -334,6 +361,7 @@ BOOST_PYTHON_MODULE(area) {
         .def("PointToPerim",&CCurve::PointToPerim)
 		.def("FitArcs",&CCurve::FitArcs)
         .def("UnFitArcs",&CCurve::UnFitArcs)
+        .def("Intersections",&CurveIntersections)
     ;
 
 	bp::class_<CBox2D>("Box") 
@@ -362,6 +390,8 @@ BOOST_PYTHON_MODULE(area) {
 		.def("Split", &SplitArea)
 		.def("InsideCurves", &InsideCurves)
 		.def("Thicken", &CArea::Thicken)
+        .def("Intersections",&AreaIntersections)
+        .def("GetArea",&AreaGetArea)
     ;
 
 	bp::class_<geoff_geometry::Matrix, boost::shared_ptr<geoff_geometry::Matrix> > ("Matrix")
