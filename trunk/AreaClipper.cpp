@@ -4,29 +4,29 @@
 
 #include "Area.h"
 #include "clipper.hpp"
-using namespace clipper;
+using namespace ClipperLib;
 
-#define TPolygon Polygon
-#define TPolyPolygon Polygons
+#define TPolygon Path
+#define TPolyPolygon Paths
 
 bool CArea::HolesLinked(){ return false; }
 
 //static const double PI = 3.1415926535897932;
 static double Clipper4Factor = 10000.0;
 
-class DoublePoint
+class DoubleAreaPoint
 {
 public:
 	double X, Y;
 
-	DoublePoint(double x, double y){X = x; Y = y;}
-	DoublePoint(const IntPoint& p){X = (double)(p.X) / Clipper4Factor; Y = (double)(p.Y) / Clipper4Factor;}
+	DoubleAreaPoint(double x, double y){X = x; Y = y;}
+	DoubleAreaPoint(const IntPoint& p){X = (double)(p.X) / Clipper4Factor; Y = (double)(p.Y) / Clipper4Factor;}
 	IntPoint int_point(){return IntPoint((long64)(X * Clipper4Factor), (long64)(Y * Clipper4Factor));}
 };
 
-static std::list<DoublePoint> pts_for_AddVertex;
+static std::list<DoubleAreaPoint> pts_for_AddVertex;
 
-static void AddPoint(const DoublePoint& p)
+static void AddPoint(const DoubleAreaPoint& p)
 {
 	pts_for_AddVertex.push_back(p);
 }
@@ -35,7 +35,7 @@ static void AddVertex(const CVertex& vertex, const CVertex* prev_vertex)
 {
 	if(vertex.m_type == 0 || prev_vertex == NULL)
 	{
-		AddPoint(DoublePoint(vertex.m_p.x * CArea::m_units, vertex.m_p.y * CArea::m_units));
+		AddPoint(DoubleAreaPoint(vertex.m_p.x * CArea::m_units, vertex.m_p.y * CArea::m_units));
 	}
 	else
 	{
@@ -100,7 +100,7 @@ static void AddVertex(const CVertex& vertex, const CVertex* prev_vertex)
 			double nx = vertex.m_c.x * CArea::m_units + radius * cos(phi-dphi);
 			double ny = vertex.m_c.y * CArea::m_units + radius * sin(phi-dphi);
 
-			AddPoint(DoublePoint(nx, ny));
+			AddPoint(DoubleAreaPoint(nx, ny));
 
 			px = nx;
 			py = ny;
@@ -119,8 +119,8 @@ static bool IsPolygonClockwise(const TPolygon& p)
 		int im1 = i-1;
 		if(im1 < 0)im1 += s;
 
-		DoublePoint pt0(p[im1]);
-		DoublePoint pt1(p[i]);
+		DoubleAreaPoint pt0(p[im1]);
+		DoubleAreaPoint pt1(p[i]);
 
 		area += 0.5 * (pt1.X - pt0.X) * (pt0.Y + pt1.Y);
 	}
@@ -131,7 +131,7 @@ static bool IsPolygonClockwise(const TPolygon& p)
 #endif
 }
 
-static void MakeLoop(const DoublePoint &pt0, const DoublePoint &pt1, const DoublePoint &pt2, double radius)
+static void MakeLoop(const DoubleAreaPoint &pt0, const DoubleAreaPoint &pt1, const DoubleAreaPoint &pt2, double radius)
 {
 	Point p0(pt0.X, pt0.Y);
 	Point p1(pt1.X, pt1.Y);
@@ -170,11 +170,11 @@ static void OffsetWithLoops(const TPolyPolygon &pp, TPolyPolygon &pp_new, double
 	{
 		// add a large square on the outside, to be removed later
 		TPolygon p;
-		p.push_back(DoublePoint(-10000.0, -10000.0).int_point());
-		p.push_back(DoublePoint(-10000.0, 10000.0).int_point());
-		p.push_back(DoublePoint(10000.0, 10000.0).int_point());
-		p.push_back(DoublePoint(10000.0, -10000.0).int_point());
-		c.AddPolygon(p, ptSubject);
+		p.push_back(DoubleAreaPoint(-10000.0, -10000.0).int_point());
+		p.push_back(DoubleAreaPoint(-10000.0, 10000.0).int_point());
+		p.push_back(DoubleAreaPoint(10000.0, 10000.0).int_point());
+		p.push_back(DoubleAreaPoint(10000.0, -10000.0).int_point());
+		c.AddPath(p, ptSubject, true);
 	}
 	else
 	{
@@ -204,11 +204,11 @@ static void OffsetWithLoops(const TPolyPolygon &pp, TPolyPolygon &pp_new, double
 
 			TPolygon loopy_polygon;
 			loopy_polygon.reserve(pts_for_AddVertex.size());
-			for(std::list<DoublePoint>::iterator It = pts_for_AddVertex.begin(); It != pts_for_AddVertex.end(); It++)
+			for(std::list<DoubleAreaPoint>::iterator It = pts_for_AddVertex.begin(); It != pts_for_AddVertex.end(); It++)
 			{
 				loopy_polygon.push_back(It->int_point());
 			}
-			c.AddPolygon(loopy_polygon, ptSubject);
+			c.AddPath(loopy_polygon, ptSubject, true);
 			pts_for_AddVertex.clear();
 		}
 	}
@@ -289,11 +289,11 @@ static void OffsetSpansWithObrounds(const CArea& area, TPolyPolygon &pp_new, dou
 
 				TPolygon loopy_polygon;
 				loopy_polygon.reserve(pts_for_AddVertex.size());
-				for(std::list<DoublePoint>::iterator It = pts_for_AddVertex.begin(); It != pts_for_AddVertex.end(); It++)
+				for(std::list<DoubleAreaPoint>::iterator It = pts_for_AddVertex.begin(); It != pts_for_AddVertex.end(); It++)
 				{
 					loopy_polygon.push_back(It->int_point());
 				}
-				c.AddPolygon(loopy_polygon, ptSubject);
+				c.AddPath(loopy_polygon, ptSubject, true);
 				pts_for_AddVertex.clear();
 			}
 			prev_vertex = &vertex;
@@ -338,7 +338,7 @@ static void MakePolyPoly( const CArea& area, TPolyPolygon &pp, bool reverse = tr
 		if(reverse)
 		{
 			unsigned int i = pts_for_AddVertex.size() - 1;// clipper wants them the opposite way to CArea
-			for(std::list<DoublePoint>::iterator It = pts_for_AddVertex.begin(); It != pts_for_AddVertex.end(); It++, i--)
+			for(std::list<DoubleAreaPoint>::iterator It = pts_for_AddVertex.begin(); It != pts_for_AddVertex.end(); It++, i--)
 			{
 				p[i] = It->int_point();
 			}
@@ -346,7 +346,7 @@ static void MakePolyPoly( const CArea& area, TPolyPolygon &pp, bool reverse = tr
 		else
 		{
 			unsigned int i = 0;
-			for(std::list<DoublePoint>::iterator It = pts_for_AddVertex.begin(); It != pts_for_AddVertex.end(); It++, i++)
+			for(std::list<DoubleAreaPoint>::iterator It = pts_for_AddVertex.begin(); It != pts_for_AddVertex.end(); It++, i++)
 			{
 				p[i] = It->int_point();
 			}
@@ -361,7 +361,7 @@ static void SetFromResult( CCurve& curve, const TPolygon& p, bool reverse = true
 	for(unsigned int j = 0; j < p.size(); j++)
 	{
 		const IntPoint &pt = p[j];
-		DoublePoint dp(pt);
+		DoubleAreaPoint dp(pt);
 		CVertex vertex(0, Point(dp.X / CArea::m_units, dp.Y / CArea::m_units), Point(0.0, 0.0));
 		if(reverse)curve.m_vertices.push_front(vertex);
 		else curve.m_vertices.push_back(vertex);
@@ -394,8 +394,8 @@ void CArea::Subtract(const CArea& a2)
 	TPolyPolygon pp1, pp2;
 	MakePolyPoly(*this, pp1);
 	MakePolyPoly(a2, pp2);
-	c.AddPolygons(pp1, ptSubject);
-	c.AddPolygons(pp2, ptClip);
+	c.AddPaths(pp1, ptSubject, true);
+	c.AddPaths(pp2, ptClip, true);
 	TPolyPolygon solution;
 	c.Execute(ctDifference, solution);
 	SetFromResult(*this, solution);
@@ -407,8 +407,8 @@ void CArea::Intersect(const CArea& a2)
 	TPolyPolygon pp1, pp2;
 	MakePolyPoly(*this, pp1);
 	MakePolyPoly(a2, pp2);
-	c.AddPolygons(pp1, ptSubject);
-	c.AddPolygons(pp2, ptClip);
+	c.AddPaths(pp1, ptSubject, true);
+	c.AddPaths(pp2, ptClip, true);
 	TPolyPolygon solution;
 	c.Execute(ctIntersection, solution);
 	SetFromResult(*this, solution);
@@ -420,8 +420,8 @@ void CArea::Union(const CArea& a2)
 	TPolyPolygon pp1, pp2;
 	MakePolyPoly(*this, pp1);
 	MakePolyPoly(a2, pp2);
-	c.AddPolygons(pp1, ptSubject);
-	c.AddPolygons(pp2, ptClip);
+	c.AddPaths(pp1, ptSubject, true);
+	c.AddPaths(pp2, ptClip, true);
 	TPolyPolygon solution;
 	c.Execute(ctUnion, solution);
 	SetFromResult(*this, solution);
@@ -433,8 +433,8 @@ void CArea::Xor(const CArea& a2)
 	TPolyPolygon pp1, pp2;
 	MakePolyPoly(*this, pp1);
 	MakePolyPoly(a2, pp2);
-	c.AddPolygons(pp1, ptSubject);
-	c.AddPolygons(pp2, ptClip);
+	c.AddPaths(pp1, ptSubject, true);
+	c.AddPaths(pp2, ptClip, true);
 	TPolyPolygon solution;
 	c.Execute(ctXor, solution);
 	SetFromResult(*this, solution);
@@ -470,9 +470,9 @@ void UnFitArcs(CCurve &curve)
 
 	curve.m_vertices.clear();
 
-	for(std::list<DoublePoint>::iterator It = pts_for_AddVertex.begin(); It != pts_for_AddVertex.end(); It++)
+	for(std::list<DoubleAreaPoint>::iterator It = pts_for_AddVertex.begin(); It != pts_for_AddVertex.end(); It++)
 	{
-		DoublePoint &pt = *It;
+		DoubleAreaPoint &pt = *It;
 		CVertex vertex(0, Point(pt.X / CArea::m_units, pt.Y / CArea::m_units), Point(0.0, 0.0));
 		curve.m_vertices.push_back(vertex);
 	}

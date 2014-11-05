@@ -31,7 +31,7 @@
 #include <boost/python/call.hpp>
 
 #include "clipper.hpp"
-using namespace clipper;
+using namespace ClipperLib;
 
 
 namespace bp = boost::python;
