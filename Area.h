@@ -1,6 +1,7 @@
 // Area.h
 // Copyright 2011, Dan Heeks
 // This program is released under the BSD license. See the file COPYING for details.
+// repository now moved to github
 
 #ifndef AREA_HEADER
 #define AREA_HEADER
