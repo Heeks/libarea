@@ -356,6 +356,27 @@ static void MakePolyPoly( const CArea& area, TPolyPolygon &pp, bool reverse = tr
 	}
 }
 
+static void MakePoly(const CCurve& curve, TPolygon &p)
+{
+	pts_for_AddVertex.clear();
+	const CVertex* prev_vertex = NULL;
+	for (std::list<CVertex>::const_iterator It2 = curve.m_vertices.begin(); It2 != curve.m_vertices.end(); It2++)
+	{
+		const CVertex& vertex = *It2;
+		if (prev_vertex)AddVertex(vertex, prev_vertex);
+		prev_vertex = &vertex;
+	}
+
+	p.resize(pts_for_AddVertex.size());
+	{
+		unsigned int i = 0;
+		for (std::list<DoubleAreaPoint>::iterator It = pts_for_AddVertex.begin(); It != pts_for_AddVertex.end(); It++, i++)
+		{
+			p[i] = It->int_point();
+		}
+	}
+}
+
 static void SetFromResult( CCurve& curve, const TPolygon& p, bool reverse = true )
 {
 	for(unsigned int j = 0; j < p.size(); j++)
@@ -425,6 +446,29 @@ void CArea::Union(const CArea& a2)
 	TPolyPolygon solution;
 	c.Execute(ctUnion, solution);
 	SetFromResult(*this, solution);
+}
+
+// static
+CArea CArea::UniteCurves(std::list<CCurve> &curves)
+{
+	Clipper c;
+
+	TPolyPolygon pp;
+
+	for (std::list<CCurve>::iterator It = curves.begin(); It != curves.end(); It++)
+	{
+		CCurve &curve = *It;
+		TPolygon p;
+		MakePoly(curve, p);
+		pp.push_back(p);
+	}
+
+	c.AddPaths(pp, ptSubject, true);
+	TPolyPolygon solution;
+	c.Execute(ctUnion, solution, ClipperLib::PolyFillType::pftNonZero, ClipperLib::PolyFillType::pftNonZero);
+	CArea area;
+	SetFromResult(area, solution);
+	return area;
 }
 
 void CArea::Xor(const CArea& a2)
