@@ -465,7 +465,7 @@ CArea CArea::UniteCurves(std::list<CCurve> &curves)
 
 	c.AddPaths(pp, ptSubject, true);
 	TPolyPolygon solution;
-	c.Execute(ctUnion, solution, ClipperLib::PolyFillType::pftNonZero, ClipperLib::PolyFillType::pftNonZero);
+	c.Execute(ctUnion, solution, pftNonZero, pftNonZero);
 	CArea area;
 	SetFromResult(area, solution);
 	return area;
