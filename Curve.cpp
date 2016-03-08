@@ -193,7 +193,13 @@ void CCurve::FitArcs()
 	{
 		CVertex& vt = *It;
 		if(vt.m_type || i == 0)
+		{
+			if (i != 0)
+			{
+				AddArcOrLines(false, new_vertices, might_be_an_arc, arc, arc_found, arc_added);
+			}
 			new_vertices.push_back(vt);
+		}
 		else
 		{
 			might_be_an_arc.push_back(&vt);
