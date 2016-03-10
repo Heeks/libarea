@@ -66,7 +66,7 @@ Point CArc::MidParam(double param)const {
 
 //segments - number of segments per full revolution!
 //d_angle - determines the direction and the ammount of the arc to draw
-void CArc::GetSegments(void(*callbackfunc)(const double *p), double pixels_per_mm, bool want_start_point)const
+void CArc::GetSegments(void(*callbackfunc)(const double *p), double pixels_per_mm)const
 {
 	if(m_s == m_e)
 		return;

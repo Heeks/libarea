@@ -676,7 +676,7 @@ return;
 	void Kurve::Replace(int vertexnumber, int type, const Point& p0, const Point& pc, int ID) {
 		// replace a span
 #ifdef _DEBUG
-		if(this == NULL || vertexnumber > m_nVertices) FAILURE(getMessage(L"Kurve::Replace - vertexNumber out of range", GEOMETRY_ERROR_MESSAGES, MES_BAD_VERTEX_NUMBER));
+		if(this == NULL || vertexnumber > m_nVertices) FAILURE(getMessage(L"Kurve::Replace - vertexNumber out of range"));
 #endif
 		SpanVertex* p = (SpanVertex*) m_spans[vertexnumber / SPANSTORAGE];
 		p->Add(vertexnumber % SPANSTORAGE, type, p0, pc, ID);
@@ -686,7 +686,7 @@ return;
 	void Kurve::ModifyIndex(int vertexnumber, WireExtraData* i) {
 		// replace an index
 #ifdef _DEBUG
-		if(this == NULL || vertexnumber > m_nVertices) FAILURE(getMessage(L"Kurve::ModifyIndex - vertexNumber out of range", GEOMETRY_ERROR_MESSAGES, MES_BAD_VERTEX_NUMBER));
+		if(this == NULL || vertexnumber > m_nVertices) FAILURE(getMessage(L"Kurve::ModifyIndex - vertexNumber out of range"));
 #endif
 		SpanVertex* p = (SpanVertex*) m_spans[vertexnumber / SPANSTORAGE];
 		p->Add(vertexnumber % SPANSTORAGE, i);
@@ -723,7 +723,7 @@ return;
 
 	int	Kurve::Get(int vertexnumber, Point& pe, Point& pc) const {
 		// returns spantype with end / centre by reference
-		if(vertexnumber < 0 || vertexnumber >= m_nVertices) FAILURE(getMessage(L"Kurve::Get - vertexNumber out of range", GEOMETRY_ERROR_MESSAGES, MES_BAD_VERTEX_NUMBER));
+		if(vertexnumber < 0 || vertexnumber >= m_nVertices) FAILURE(getMessage(L"Kurve::Get - vertexNumber out of range"));
 		if(m_isReversed == true) {
 			int revVertexnumber = m_nVertices - 1 - vertexnumber;
 			SpanVertex* p = (SpanVertex*)m_spans[revVertexnumber / SPANSTORAGE];
@@ -745,14 +745,14 @@ return;
 	}
 	int	Kurve::GetSpanID(int vertexnumber) const {
 		// for spanID (wire offset)
-		if(vertexnumber < 0 || vertexnumber >= m_nVertices) FAILURE(getMessage(L"Kurve::Get - vertexNumber out of range", GEOMETRY_ERROR_MESSAGES, MES_BAD_VERTEX_NUMBER));
+		if(vertexnumber < 0 || vertexnumber >= m_nVertices) FAILURE(getMessage(L"Kurve::Get - vertexNumber out of range"));
 		if(m_isReversed == true) vertexnumber = m_nVertices - 1 - vertexnumber;
 		SpanVertex* p = (SpanVertex*)m_spans[vertexnumber / SPANSTORAGE];
 		return p->GetSpanID(vertexnumber % SPANSTORAGE);
 	}
 	int Kurve::Get(int spannumber, Span& sp, bool returnSpanProperties, bool transform) const {
 		// returns span data and optional properties - the function returns as the span type
-		if(spannumber < 1 || spannumber > m_nVertices) FAILURE(getMessage(L"Kurve::Get - vertexNumber out of range", GEOMETRY_ERROR_MESSAGES, MES_BAD_VERTEX_NUMBER));
+		if(spannumber < 1 || spannumber > m_nVertices) FAILURE(getMessage(L"Kurve::Get - vertexNumber out of range"));
 		if(m_nVertices < 2) return -99;
 
 		int spanVertexNumber = spannumber - 1;
@@ -778,7 +778,7 @@ return;
 #if 0
 	int Kurve::Get(int spannumber, Span3d& sp, bool returnSpanProperties, bool transform) const {
 		// returns span data and optional properties - the function returns as the span type
-		if(spannumber < 1 || spannumber > m_nVertices) FAILURE(getMessage(L"Kurve::Get - vertexNumber out of range", GEOMETRY_ERROR_MESSAGES, MES_BAD_VERTEX_NUMBER));
+		if(spannumber < 1 || spannumber > m_nVertices) FAILURE(getMessage(L"Kurve::Get - vertexNumber out of range"));
 		if(m_nVertices < 2) return -99;
 
 		int spanVertexNumber = spannumber - 1;
@@ -812,7 +812,8 @@ return;
 	}
 
 	void Span::SetProperties(bool returnProperties) {
-		if((returnSpanProperties = returnProperties)) {
+		returnSpanProperties = returnProperties;
+		if(returnSpanProperties) {
 			// return span properties
 			if(dir) {
 				// arc properties
@@ -827,7 +828,7 @@ return;
 				double radCheck = ve.normalise();
 //				if(FNE(radius, radCheck, geoff_geometry::TOLERANCE * 0.5)){
 				if(FNE(radius, radCheck, geoff_geometry::TOLERANCE)){
-					FAILURE(getMessage(L"Invalid Geometry - Radii mismatch - SetProperties", GEOMETRY_ERROR_MESSAGES, MES_INVALIDARC));
+					FAILURE(getMessage(L"Invalid Geometry - Radii mismatch - SetProperties"));
 				}
 				
 				length = 0.0;
@@ -978,10 +979,10 @@ return;
 		Kurve temp;
 		
 		bool wrapped = false;
-		int nSpans = 0;
 		int spanno = startSpanno;
 		Span sp;
-		while(1) {
+		for(int nSpans = 0; nSpans <= this->nSpans(); nSpans++)
+		{
 			this->Get(spanno, sp, false, true);
 			if(spanno == startSpanno && wrapped == false) {
 				temp.Start(*pNewStart);
@@ -995,8 +996,7 @@ return;
 			}
 
 			spanno++;
-			nSpans++;
-			if(nSpans > this->nSpans()) break;
+
 			if(spanno > this->nSpans()) {
 				if(this->Closed() == false) break;
 				spanno = 1;
@@ -1021,10 +1021,11 @@ return;
 			if(spLast.p1 == *pNewEnd) return;
 		}
 		Kurve temp;
-		
-		int spanno = 1;
+	
 		Span sp;
-		while(1) {
+
+		for(int spanno = 1; spanno != (endSpanno + 1); spanno++)
+		{
 			this->Get(spanno, sp, false, true);
 			if(spanno == 1) {
 				temp.Start(sp.p0);
@@ -1047,7 +1048,7 @@ return;
 		min = Point(1.0e61, 1.0e61);
 		max = Point(-1.0e61, -1.0e61);
 
-		if(!GetScale(xscale)) FAILURE(getMessage(L"Differential Scale not allowed for this method", GEOMETRY_ERROR_MESSAGES, MES_DIFFSCALE));	// differential scale
+		if(!GetScale(xscale)) FAILURE(getMessage(L"Differential Scale not allowed for this method"));	// differential scale
 		Span sp;
 		for(int i = 1; i < m_nVertices; i++) {
 			Get(i, sp, true, true);
@@ -1098,7 +1099,7 @@ return;
 		double perim = 0;
 		Span sp;
 		double xscale = 1.0;
-		if(!GetScale(xscale)) FAILURE(getMessage(L"Differential Scale not allowed for this method", GEOMETRY_ERROR_MESSAGES, MES_DIFFSCALE));	// differential scale
+		if(!GetScale(xscale)) FAILURE(getMessage(L"Differential Scale not allowed for this method"));	// differential scale
 
 		if(m_nVertices > 1) {
 			for(int i = 1; i < m_nVertices; i++)
@@ -1113,7 +1114,7 @@ return;
 		Span sp;
 
 		if(Closed()) {
-			if(!GetScale(xscale)) FAILURE(getMessage(L"Differential Scale not allowed for this method", GEOMETRY_ERROR_MESSAGES, MES_DIFFSCALE));	// differential scale
+			if(!GetScale(xscale)) FAILURE(getMessage(L"Differential Scale not allowed for this method"));	// differential scale
 			for(int i = 1; i < m_nVertices; i++) {			
 				if(Get(i, sp, true))
 					area += ( 0.5 * ((sp.pc.x - sp.p0.x) * (sp.pc.y + sp.p0.y) - (sp.pc.x - sp.p1.x) * (sp.pc.y + sp.p1.y) - sp.angle * sp.radius * sp.radius));
@@ -1325,7 +1326,7 @@ return;
 		return m_nVertices - kReduced.m_nVertices;
 
 #else 
-		int dir1, dir2;
+		int dir1, dir2 = 0;
 		Point p0, p1, p2, pc0, pc1, pc2;
 		int vertex = 0;
 		int dir0 = Get(vertex++, p0, pc0);		// first vertex

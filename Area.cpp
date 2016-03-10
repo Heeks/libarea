@@ -195,13 +195,13 @@ static void make_zig_curve(const CCurve& input_curve, double y0, double y)
 
     // find a high point to start looking from
 	Point top_left;
-	int top_left_index;
+	int top_left_index = 0;
 	bool top_left_found = false;
 	Point top_right;
-	int top_right_index;
+	int top_right_index = 0;
 	bool top_right_found = false;
 	Point bottom_left;
-	int bottom_left_index;
+	int bottom_left_index = 0;
 	bool bottom_left_found = false;
 
 	int i =0;

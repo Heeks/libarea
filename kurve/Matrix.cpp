@@ -394,7 +394,7 @@ namespace geoff_geometry {
 			}
 
 			// divide columns by minus pivot (value of pivot element is contained in biga)
-			if ( fabs ( biga )  < 1.0e-10 )FAILURE(getMessage(L"Singular Matrix - Inversion failure",GEOMETRY_ERROR_MESSAGES, -1));	// singular matrix
+			if ( fabs ( biga )  < 1.0e-10 )FAILURE(getMessage(L"Singular Matrix - Inversion failure"));	// singular matrix
 
 			for ( i = 0 ; i < n ; i++ ) {
 				if ( i != k ) {

@@ -124,7 +124,7 @@
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				DebugInformationFormat="3"
+				DebugInformationFormat="0"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -137,11 +137,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(PYTHON_LIB)"
+				AdditionalDependencies="$(PYTHON26_LIB)"
 				OutputFile="$(OutDir)\area.pyd"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(BOOST_PYTHON_PATH)/lib&quot;"
-				GenerateDebugInformation="true"
+				AdditionalLibraryDirectories="&quot;$(BOOST43_PYTHON_PATH)/lib&quot;"
+				GenerateDebugInformation="false"
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"

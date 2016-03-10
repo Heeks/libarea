@@ -36,7 +36,7 @@ namespace geoff_geometry {
 			}
 			else {
 				// arc arc
-				return ArcArcIntof(sp0, sp1, p0, p1, t);
+				return ArcArcIntof(sp0, sp1, p0, p1);
 			}
 		}
 	}
@@ -102,7 +102,7 @@ namespace geoff_geometry {
 		return nRoots;
 	}
 
-	int ArcArcIntof(const Span& arc0, const Span& arc1, Point& pLeft, Point& pRight, double t[4]) {
+	int ArcArcIntof(const Span& arc0, const Span& arc1, Point& pLeft, Point& pRight) {
 		// Intof 2 arcs
 		int numInts = Intof(Circle(arc0.pc, arc0.radius), Circle(arc1.pc, arc1.radius), pLeft, pRight);
 

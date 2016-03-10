@@ -110,7 +110,6 @@ inline bool FNEZ(double a, double tolerance = TIGHT_TOLERANCE) {return fabs(a) >
 #define ACW 1		// anti-clockwise
 #define CW -1		// clockwise
 
-	const wchar_t* getMessage(const wchar_t* original, int messageGroup, int stringID);
 	const wchar_t* getMessage(const wchar_t* original);							// dummy
 	void FAILURE(const wchar_t* str);
 	void FAILURE(const std::wstring& str);
@@ -242,7 +241,7 @@ inline bool FNEZ(double a, double tolerance = TIGHT_TOLERANCE) {return fabs(a) >
 #define INVALID_POINT	Point(9.9999999e50, 0, false)
 #define INVALID_POINT3D	Point3d(9.9999999e50, 0, 0, false)
 #define INVALID_CLINE	CLine(INVALID_POINT, 1, 0, false)
-#define INVALID_CIRCLE	Circle(INVALID_POINT, 0, false)
+#define INVALID_CIRCLE	Circle(INVALID_POINT, 0)
 
 	// 3d point class
 	class Point3d {
@@ -479,8 +478,8 @@ inline bool FNEZ(double a, double tolerance = TIGHT_TOLERANCE) {return fabs(a) >
 
 		// constructors etc...
 		inline	Circle() {ok = false;};
-		Circle( const Point& p, double r, bool okay = true);							// Circle  c1(Point(10,30), 20);
-		Circle( const Point& p, const Point& pc);											// Circle  c1(p[222], p[223]);
+		Circle( const Point& p, double r);										// Circle  c1(Point(10,30), 20);
+		Circle( const Point& p, const Point& pc);								// Circle  c1(p[222], p[223]);
 		Circle( const Circle& c ){*this = c;}									// copy constructor  Circle c1(c2);
 		Circle( const Span& sp);														// constructor
 
@@ -932,7 +931,7 @@ inline bool FNEZ(double a, double tolerance = TIGHT_TOLERANCE) {return fabs(a) >
 	int Intof(const Span& sp0 , const Span& sp1, Point& p0, Point& p1, double t[4]);
 	int	LineLineIntof(const Span& L0 , const Span& L1, Point& p, double t[2]);
 	int LineArcIntof(const Span& line, const Span& arc, Point& p0, Point& p1, double t[4]);
-	int ArcArcIntof(const Span& arc0, const Span& arc1, Point& pLeft, Point& pRight, double t[4]);
+	int ArcArcIntof(const Span& arc0, const Span& arc1, Point& pLeft, Point& pRight);
 
 	bool OnSpan(const Span& sp, const Point& p);
 	bool OnSpan(const Span& sp, const Point& p, bool nearPoints, Point& pNear, Point& pOnSpan);	// function returns true if pNear == pOnSpan

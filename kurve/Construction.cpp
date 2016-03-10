@@ -18,7 +18,6 @@ namespace geoff_geometry {
 	double RESOLUTION = 1.0e-06;
 
 	// dummy functions
-	const wchar_t* getMessage(const wchar_t* original, int messageGroup, int stringID){return original;}
 	const wchar_t* getMessage(const wchar_t* original){return original;}
 	void FAILURE(const wchar_t* str){throw(str);}
 	void FAILURE(const std::wstring& str){throw(str);}
@@ -358,7 +357,7 @@ namespace geoff_geometry {
 	// circle methods
 	// ***************************************************************************************************************************************
 
-	Circle::Circle(const Point& p, double rad, bool okay){
+	Circle::Circle(const Point& p, double rad){
 		// Circle
 		pc = p;
 		radius = rad;
@@ -386,7 +385,7 @@ namespace geoff_geometry {
 	Circle Circle::Transform(Matrix& m) { // transform
 		Point p0 = this->pc;
 		double scale;
-		if(m.GetScale(scale) == false) FAILURE(getMessage(L"Differential Scale not allowed for this method", GEOMETRY_ERROR_MESSAGES, MES_DIFFSCALE));
+		if(m.GetScale(scale) == false) FAILURE(getMessage(L"Differential Scale not allowed for this method"));
 		return Circle(p0.Transform(m), radius * scale);
 	}
 
@@ -461,7 +460,7 @@ namespace geoff_geometry {
 	Point On(const Circle& c, const Point& p) {
 		// returns point that is nearest to c from p
 		double r = p.Dist(c.pc);
-		if(r < TOLERANCE) FAILURE(getMessage(L",Point on Circle centre - On(Circle& c, Point& p)", GEOMETRY_ERROR_MESSAGES, MES_POINTONCENTRE));
+		if(r < TOLERANCE) FAILURE(getMessage(L",Point on Circle centre - On(Circle& c, Point& p)"));
 		return(Mid(p, c.pc, (r - c.radius) / r));
 	}
 
@@ -641,7 +640,7 @@ namespace geoff_geometry {
 		if(!s2.ok) return Thro(p0, p2);		// p1 & p2 coincident
 
 		Point p = Intof(Normal(s0, Mid(p0, p1)),  Normal(s1, Mid(p0, p2)));
-		return (p.ok)? Circle(p, p0.Dist(p), true) : INVALID_CIRCLE;
+		return (p.ok)? Circle(p, p0.Dist(p)) : INVALID_CIRCLE;
 	}
 	Circle	Tanto(int NF, int AT0, const CLine& s0, int AT1, const Circle &c1, double rad) {
 		// circle tanto cline & circle with radius
@@ -786,7 +785,8 @@ namespace geoff_geometry {
 	Plane::Plane(double dist, const Vector3d& n) {
 		normal = n;
 		double mag = normal.normalise();
-		if((ok = (normal != NULL_VECTOR))) d = dist / mag;
+		ok = (normal != NULL_VECTOR);
+		if(ok) d = dist / mag;
 	}
 
 	double Plane::Dist(const Point3d& p)const{

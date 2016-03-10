@@ -109,28 +109,6 @@ static void AddVertex(const CVertex& vertex, const CVertex* prev_vertex)
 	}
 }
 
-static bool IsPolygonClockwise(const TPolygon& p)
-{
-#if 1
-	double area = 0.0;
-	unsigned int s = p.size();
-	for(unsigned int i = 0; i<s; i++)
-	{
-		int im1 = i-1;
-		if(im1 < 0)im1 += s;
-
-		DoubleAreaPoint pt0(p[im1]);
-		DoubleAreaPoint pt1(p[i]);
-
-		area += 0.5 * (pt1.X - pt0.X) * (pt0.Y + pt1.Y);
-	}
-
-	return area > 0.0;
-#else
-	return IsClockwise(p);
-#endif
-}
-
 static void MakeLoop(const DoubleAreaPoint &pt0, const DoubleAreaPoint &pt1, const DoubleAreaPoint &pt2, double radius)
 {
 	Point p0(pt0.X, pt0.Y);

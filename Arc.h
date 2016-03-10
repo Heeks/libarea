@@ -21,5 +21,5 @@ public:
 	double IncludedAngle()const; // always > 0
 	bool AlmostALine()const;
 	Point MidParam(double param)const;
-	void GetSegments(void(*callbackfunc)(const double *p), double pixels_per_mm, bool want_start_point = true)const;
+	void GetSegments(void(*callbackfunc)(const double *p), double pixels_per_mm)const;
 };
