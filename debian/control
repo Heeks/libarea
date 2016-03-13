@@ -4,9 +4,9 @@ Section: misc
 Maintainer: Romuald Conty <neomilium@gmail.com>
 Build-Depends: debhelper (>= 7), libboost-python-dev, cmake, python-dev (>=2.6.5)
 Standards-Version: 3.9.3
-Homepage: https://code.google.com/p/libarea/
-Vcs-Svn: http://libarea.googlecode.com/svn/trunk/
-Vcs-Browser: https://code.google.com/p/libarea/source/browse/
+Homepage: https://github.com/heeks/libarea
+Vcs-Git: https://github.com/Heeks/libarea.git
+Vcs-Browser: https://github.com/heeks/libarea
 
 Package: libarea0
 Architecture: any
