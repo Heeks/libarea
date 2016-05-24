@@ -135,15 +135,14 @@ set_target_properties(libarea PROPERTIES SOVERSION 0)
 # this part allow to support multi-arch
 # ie. Debian builder sets correctly the target path according to architecture
 # e.g. /usr/lib/i386-linux-gnu, /usr/lib/x86_64-linux-gnu
-# TODO: Support this feature
-#if(DEFINED CMAKE_INSTALL_LIBDIR)
-#    set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR})
-#else(DEFINED CMAKE_INSTALL_LIBDIR)
-#    set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_PREFIX}/lib)
-#endif(DEFINED CMAKE_INSTALL_LIBDIR)
+if(DEFINED LIB_INSTALL_DIR)
+    set(LIB_INSTALL_DIR ${LIB_INSTALL_DIR})
+else(DEFINED LIB_INSTALL_DIR)
+    set(LIB_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/lib)
+endif(DEFINED LIB_INSTALL_DIR)
 
-install(TARGETS libarea LIBRARY DESTINATION lib/ COMPONENT libraries)
-message(STATUS "Library will be installed to: " ${CMAKE_INSTALL_PREFIX}/lib)
+install(TARGETS libarea LIBRARY DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
+message(STATUS "Library will be installed to: " ${LIB_INSTALL_DIR})
 
 
 # this makes the Python module
