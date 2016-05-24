@@ -169,7 +169,7 @@ set_target_properties(area PROPERTIES PREFIX "")
 
 # this figures out where to install the Python modules
 execute_process(
-    COMMAND python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())"
+    COMMAND python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(True))"
     OUTPUT_VARIABLE Python_site_packages
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
