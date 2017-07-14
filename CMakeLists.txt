@@ -45,7 +45,7 @@ execute_process(
 message(STATUS "Python include dir:" ${Python_Includes})
 
 execute_process(
-	COMMAND python-config --libs
+	COMMAND python-config --ldflags
 	COMMAND tr -d '\n'
 	OUTPUT_VARIABLE Python_Link_Flags
 )
