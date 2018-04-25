@@ -443,6 +443,15 @@ bool CCurve::IsClosed()const
 }
 
 void CCurve::ChangeStart(const Point &p) {
+	if (m_vertices.size() > 0)
+	{
+		if (p == m_vertices.front().m_p)
+		{
+			// no need to change start if it's already the start
+			return;
+		}
+
+	}
 	CCurve new_curve;
 
 	bool started = false;
