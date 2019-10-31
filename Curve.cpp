@@ -26,11 +26,11 @@ double Point::normalize()
 	return len;
 }
 
-Line::Line(const Point& P0, const Point& V):p0(P0), v(V)
+Line2d::Line2d(const Point& P0, const Point& V) :p0(P0), v(V)
 {
 }
 
-double Line::Dist(const Point& p)const
+double Line2d::Dist(const Point& p)const
 {
 	Point vn = v;
 	vn.normalize();
@@ -54,7 +54,18 @@ void CCurve::append(const CVertex& vertex)
 	m_vertices.push_back(vertex);
 }
 
-bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& might_be_an_arc, CArc &arc_returned)
+
+class CArcOrLine
+{
+public:
+	CArc m_arc;
+	bool m_is_a_line;
+
+	CArcOrLine(const CArc& arc, bool is_a_line) :m_arc(arc), m_is_a_line(is_a_line){}
+};
+
+
+bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& might_be_an_arc, CArcOrLine &arc_or_line_returned)
 {
 	// this examines the vertices in might_be_an_arc
 	// if they do fit an arc, set arc to be the arc that they fit and return true
@@ -62,7 +73,7 @@ bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& migh
 	if(might_be_an_arc.size() < 2)return false;
 
 	// find middle point
-	int num = might_be_an_arc.size();
+	unsigned int num = (unsigned int)might_be_an_arc.size();
 	int i = 0;
 	const CVertex* mid_vt = NULL;
 	int mid_i = (num-1)/2;
@@ -79,23 +90,28 @@ bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& migh
 	Point p0(prev_vt.m_p);
 	Point p1(mid_vt->m_p);
 	Point p2(might_be_an_arc.back()->m_p);
-	Circle c(p0, p1, p2);
+	CircleOrLine c(p0, p1, p2);
 
 	const CVertex* current_vt = &prev_vt;
-	double accuracy = CArea::m_accuracy * 1.4 / CArea::m_units;
 	for(std::list<const CVertex*>::iterator It = might_be_an_arc.begin(); It != might_be_an_arc.end(); It++)
 	{
 		const CVertex* vt = *It;
-
-		if(!c.LineIsOn(current_vt->m_p, vt->m_p, accuracy))
+		if(!c.PointIsOn(vt->m_p, CArea::m_accuracy / CArea::m_units * 0.1))
+			return false;
+		if(!c.LineIsOn(current_vt->m_p, vt->m_p, CArea::m_accuracy * 2.0 / CArea::m_units))
 			return false;
 		current_vt = vt;
 	}
 
 	CArc arc;
-	arc.m_c = c.m_c;
 	arc.m_s = prev_vt.m_p;
 	arc.m_e = might_be_an_arc.back()->m_p;
+	if (c.m_is_a_line)
+	{
+		arc_or_line_returned = CArcOrLine(arc, true);
+		return true;
+	}
+	arc.m_c = c.m_c;
 	arc.SetDirWithPoint(might_be_an_arc.front()->m_p);
 	arc.m_user_data = might_be_an_arc.back()->m_user_data;
 
@@ -132,98 +148,129 @@ bool CCurve::CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& migh
 		}
 	}
 
-	arc_returned = arc;
+	arc_or_line_returned = CArcOrLine(arc, false);
 	return true;
 }
 
-void CCurve::AddArcOrLines(bool check_for_arc, std::list<CVertex> &new_vertices, std::list<const CVertex*>& might_be_an_arc, CArc &arc, bool &arc_found, bool &arc_added)
+bool CheckAddedRadii(const std::list<CVertex> &new_vertices)
 {
-	if(check_for_arc && CheckForArc(new_vertices.back(), might_be_an_arc, arc))
+	if (new_vertices.size() > 1)
+	{
+		std::list<CVertex>::const_iterator It = new_vertices.end();
+		It--;
+		const CVertex& v = *It;
+		if (v.m_type != 0)
+		{
+			It--;
+			const CVertex& p = *It;
+			double r1 = p.m_p.dist(v.m_c);
+			double r2 = v.m_p.dist(v.m_c);
+			if (fabs(r1 - r2) > 0.0001)
+			{
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+
+void CCurve::AddArcOrLines(bool check_for_arc, std::list<CVertex> &new_vertices, std::list<const CVertex*>& might_be_an_arc, CArcOrLine &arc_or_line, bool &arc_found, bool &arc_added)
+{
+	if (check_for_arc && CheckForArc(new_vertices.back(), might_be_an_arc, arc_or_line))
 	{
 		arc_found = true;
 	}
 	else
 	{
-		if(arc_found)
+		if (arc_found)
 		{
-			if(arc.AlmostALine())
+			if (arc_or_line.m_is_a_line || arc_or_line.m_arc.AlmostALine(CArea::m_accuracy))
 			{
-				new_vertices.push_back(CVertex(arc.m_e, arc.m_user_data));
+				new_vertices.push_back(CVertex(arc_or_line.m_arc.m_e, arc_or_line.m_arc.m_user_data));
 			}
 			else
 			{
-				new_vertices.push_back(CVertex(arc.m_dir ? 1:-1, arc.m_e, arc.m_c, arc.m_user_data));
+				new_vertices.push_back(CVertex(arc_or_line.m_arc.m_dir ? 1 : -1, arc_or_line.m_arc.m_e, arc_or_line.m_arc.m_c, arc_or_line.m_arc.m_user_data));
+				CheckAddedRadii(new_vertices);
 			}
 
 			arc_added = true;
 			arc_found = false;
 			const CVertex* back_vt = might_be_an_arc.back();
 			might_be_an_arc.clear();
-			if(check_for_arc)might_be_an_arc.push_back(back_vt);
+			if (check_for_arc)might_be_an_arc.push_back(back_vt);
 		}
 		else
 		{
 			const CVertex* back_vt = might_be_an_arc.back();
-			if(check_for_arc)might_be_an_arc.pop_back();
-			for(std::list<const CVertex*>::iterator It = might_be_an_arc.begin(); It != might_be_an_arc.end(); It++)
+			if (check_for_arc)might_be_an_arc.pop_back();
+			for (std::list<const CVertex*>::iterator It = might_be_an_arc.begin(); It != might_be_an_arc.end(); It++)
 			{
 				const CVertex* v = *It;
-				if(It != might_be_an_arc.begin() || (new_vertices.size() == 0) || (new_vertices.back().m_p != v->m_p))
+				if (It != might_be_an_arc.begin() || (new_vertices.size() == 0) || (new_vertices.back().m_p != v->m_p))
 				{
 					new_vertices.push_back(*v);
+					CheckAddedRadii(new_vertices);
 				}
 			}
 			might_be_an_arc.clear();
-			if(check_for_arc)might_be_an_arc.push_back(back_vt);
+			if (check_for_arc)might_be_an_arc.push_back(back_vt);
 		}
 	}
 }
+
 
 void CCurve::FitArcs()
 {
 	std::list<CVertex> new_vertices;
 
 	std::list<const CVertex*> might_be_an_arc;
-	CArc arc;
+	CArcOrLine arc_or_line(CArc(), false);
 	bool arc_found = false;
 	bool arc_added = false;
 
 	int i = 0;
-	for(std::list<CVertex>::iterator It = m_vertices.begin(); It != m_vertices.end(); It++, i++)
+	const CVertex* prev_vt = NULL;
+	for (std::list<CVertex>::iterator It = m_vertices.begin(); It != m_vertices.end(); It++, i++)
 	{
 		CVertex& vt = *It;
-		if(vt.m_type || i == 0)
+		if (vt.m_type || i == 0)
 		{
 			if (i != 0)
 			{
-				AddArcOrLines(false, new_vertices, might_be_an_arc, arc, arc_found, arc_added);
+				AddArcOrLines(false, new_vertices, might_be_an_arc, arc_or_line, arc_found, arc_added);
 			}
 			new_vertices.push_back(vt);
 		}
 		else
 		{
-			might_be_an_arc.push_back(&vt);
+			if (vt.m_p != prev_vt->m_p)
+			{
+				might_be_an_arc.push_back(&vt);
 
-			if(might_be_an_arc.size() == 1)
-			{
-			}
-			else
-			{
-				AddArcOrLines(true, new_vertices, might_be_an_arc, arc, arc_found, arc_added);
+				if (might_be_an_arc.size() == 1)
+				{
+				}
+				else
+				{
+					AddArcOrLines(true, new_vertices, might_be_an_arc, arc_or_line, arc_found, arc_added);
+				}
 			}
 		}
+		prev_vt = &vt;
 	}
 
-	if(might_be_an_arc.size() > 0)AddArcOrLines(false, new_vertices, might_be_an_arc, arc, arc_found, arc_added);
+	if (might_be_an_arc.size() > 0)AddArcOrLines(false, new_vertices, might_be_an_arc, arc_or_line, arc_found, arc_added);
 
-	if(arc_added)
+	if (arc_added)
 	{
 		m_vertices.clear();
-		for(std::list<CVertex>::iterator It = new_vertices.begin(); It != new_vertices.end(); It++)m_vertices.push_back(*It);
-		for(std::list<const CVertex*>::iterator It = might_be_an_arc.begin(); It != might_be_an_arc.end(); It++)m_vertices.push_back(*(*It));
+		for (std::list<CVertex>::iterator It = new_vertices.begin(); It != new_vertices.end(); It++)m_vertices.push_back(*It);
+		for (std::list<const CVertex*>::iterator It = might_be_an_arc.begin(); It != might_be_an_arc.end(); It++)m_vertices.push_back(*(*It));
 	}
 }
-
 void CCurve::UnFitArcs()
 {
 	std::list<Point> new_pts;
@@ -282,8 +329,8 @@ void CCurve::UnFitArcs()
 
 				if (Segments < 1)
 					Segments=1;
-				if (Segments > 100)
-					Segments=100;
+				if (Segments > 5000)
+					Segments=5000;
 
 				dphi=phit/(Segments);
 

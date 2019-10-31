@@ -10,13 +10,13 @@
 #include "Point.h"
 #include "Box2D.h"
 
-class Line{
+class Line2d{
 public:
 	Point p0;
 	Point v;
 
 	// constructors
-	Line(const Point& P0, const Point& V);
+	Line2d(const Point& P0, const Point& V);
 
 	double Dist(const Point& p)const;
 };
@@ -64,13 +64,15 @@ public:
 	void Intersect(const Span& s, std::list<Point> &pts)const; // finds all the intersection points between two spans
 };
 
+class CArcOrLine;
+
 class CCurve
 {
 	// a closed curve, please make sure you add an end point, the same as the start point
 
 protected:
-	void AddArcOrLines(bool check_for_arc, std::list<CVertex> &new_vertices, std::list<const CVertex*>& might_be_an_arc, CArc &arc, bool &arc_found, bool &arc_added);
-	bool CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& might_be_an_arc, CArc &arc);
+	void AddArcOrLines(bool check_for_arc, std::list<CVertex> &new_vertices, std::list<const CVertex*>& might_be_an_arc, CArcOrLine &arc_or_line, bool &arc_found, bool &arc_added);
+	bool CheckForArc(const CVertex& prev_vt, std::list<const CVertex*>& might_be_an_arc, CArcOrLine &arc_or_line);
 
 public:
 	std::list<CVertex> m_vertices;

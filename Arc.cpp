@@ -35,13 +35,13 @@ double CArc::IncludedAngle()const
 	return fabs(ange - angs);
 }
 
-bool CArc::AlmostALine()const
+bool CArc::AlmostALine(double accuracy)const
 {
 	Point mid_point = MidParam(0.5);
-	if(Line(m_s, m_e - m_s).Dist(mid_point) <= Point::tolerance)
+	if(Line2d(m_s, m_e - m_s).Dist(mid_point) <= accuracy)
 		return true;
 
-	const double max_arc_radius = 1.0 / Point::tolerance;
+	const double max_arc_radius = 1.0 / geoff_geometry::TOLERANCE;
 	double radius = m_c.dist(m_s);
 	if (radius > max_arc_radius)
 	{
