@@ -27,15 +27,29 @@ if (NOT BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug)
 endif(NOT BUILD_TYPE)
 
+if (APPLE)
+  set(CMAKE_MACOSX_RPATH 1)
+  set(SED_COMMAND sed -E)
+else(APPLE)
+  set(SED_COMMAND sed -r)
+endif()
+
 # this figures out the Python include directories and adds them to the
 # header file search path
 execute_process(
     COMMAND python-config --includes
-    COMMAND sed -r "s/-I//g; s/ +/;/g"
+    COMMAND ${SED_COMMAND} "s/-I//g; s/ +/;/g"
     COMMAND tr -d '\n'
     OUTPUT_VARIABLE Python_Includes
 )
 message(STATUS "Python include dir:" ${Python_Includes})
+
+execute_process(
+	COMMAND python-config --ldflags
+	COMMAND tr -d '\n'
+	OUTPUT_VARIABLE Python_Link_Flags
+)
+message(STATUS "Python link flags:" ${Python_Link_Flags})
 
 include_directories(${Python_Includes})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
@@ -166,6 +180,7 @@ else (USE_CLIPPER_FOR_PYTHON)
 endif (USE_CLIPPER_FOR_PYTHON)
 target_link_libraries(area ${Boost_LIBRARIES})
 set_target_properties(area PROPERTIES PREFIX "") 
+set_target_properties(area PROPERTIES LINK_FLAGS "${Python_Link_Flags}")
 
 # this figures out where to install the Python modules
 execute_process(
