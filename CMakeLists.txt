@@ -27,20 +27,18 @@ if (NOT BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug)
 endif(NOT BUILD_TYPE)
 
-# this figures out the Python include directories and adds them to the
-# header file search path
-execute_process(
-    COMMAND python-config --includes
-    COMMAND sed -r "s/-I//g; s/ +/;/g"
-    COMMAND tr -d '\n'
-    OUTPUT_VARIABLE Python_Includes
-)
-message(STATUS "Python include dir:" ${Python_Includes})
+set(PYTHON_VERSION 3.6)
+mark_as_advanced(PYTHON_VERSION)
 
-include_directories(${Python_Includes})
+find_package( Python ${PYTHON_VERSION} COMPONENTS Development)
+message(STATUS "Python include dir:" ${Python_INCLUDE_DIRS})
+
+set(Boost_PYTHON_COMPONENT python${Python_VERSION_MAJOR}${Python_VERSION_MINOR})
+
+include_directories(${Python_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-find_package( Boost COMPONENTS python REQUIRED)  # find BOOST and boost-python
+find_package( Boost COMPONENTS ${Boost_PYTHON_COMPONENT} REQUIRED)  # find BOOST and boost-python
 if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
     MESSAGE(STATUS "found Boost: " ${Boost_LIB_VERSION})
@@ -167,17 +165,10 @@ endif (USE_CLIPPER_FOR_PYTHON)
 target_link_libraries(area ${Boost_LIBRARIES})
 set_target_properties(area PROPERTIES PREFIX "") 
 
-# this figures out where to install the Python modules
-execute_process(
-    COMMAND python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())"
-    OUTPUT_VARIABLE Python_site_packages
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
 # strip away /usr/local/ because that is what CMAKE_INSTALL_PREFIX is set to
 # also, since there is no leading "/", it makes ${Python_site_packages} a relative path.
-STRING(REGEX REPLACE "/usr/local/(.*)$" "\\1" Python_site_packages "${Python_site_packages}" )
-STRING(REGEX REPLACE "/usr/(.*)$" "\\1" Python_site_packages "${Python_site_packages}" )
+STRING(REGEX REPLACE "/usr/local/(.*)$" "\\1" Python_site_packages "${Python_SITELIB}" )
+STRING(REGEX REPLACE "/usr/(.*)$" "\\1" Python_site_packages "${Python_SITELIB}" )
 
 message(STATUS "Python module will be installed to: " ${CMAKE_INSTALL_PREFIX}/${Python_site_packages})
 
